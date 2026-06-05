@@ -150,8 +150,9 @@ export function EditorCanvas({
                   return [(
                     <div
                       key={field.id}
-                      role={isPreviewMode ? undefined : 'button'}
-                      tabIndex={isPreviewMode ? undefined : 0}
+                      role="button"
+                      tabIndex={isPreviewMode ? -1 : 0}
+                      aria-disabled={isPreviewMode || undefined}
                       style={getFieldStyle(field, zoom, isPreviewMode)}
                       onMouseDown={(e) => onFieldMouseDown(e, field)}
                       onTouchStart={(e) => onFieldTouchStart(e, field)}
