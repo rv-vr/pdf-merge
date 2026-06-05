@@ -79,8 +79,8 @@ export function FieldsSidebar({
         </div>
 
         {/* Scrollable content */}
-        <ScrollArea className="flex-1 overflow-hidden">
-          <div className="px-3 py-3 w-full">
+        <ScrollArea className="flex-1 overflow-hidden w-full">
+          <div className="px-3 py-3">
             {/* Insert Fields section */}
             <div className="mb-2 flex items-center justify-between px-1">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
