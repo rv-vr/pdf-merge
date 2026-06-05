@@ -16,33 +16,46 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { PlacedField } from '@/types';
 import { cn } from '@/lib/utils';
 
-function getFieldStyle(field: PlacedField, zoom: number): React.CSSProperties {
-  return {
+function getFieldStyle(
+  field: PlacedField,
+  zoom: number,
+  isPreviewMode: boolean
+): React.CSSProperties {
+  const base: React.CSSProperties = {
     left: `${field.x}%`,
     top: `${field.y}%`,
     width: `${field.width}%`,
-    height: '1.2em',
-    lineHeight: '1.2em',
-    display: 'flex',
-    alignItems: 'center',
-    paddingLeft: '0.4em',
-    paddingRight: '0.4em',
-    gap: '0.3em',
-    overflow: 'hidden',
-    whiteSpace: 'nowrap' as const,
-    color: field.color,
-    fontFamily:
-      field.font === 'Helvetica'
-        ? 'sans-serif'
-        : field.font === 'Courier'
-        ? 'monospace'
-        : 'serif',
-    fontSize: `${Math.max(8, field.fontSize * 0.9 * zoom)}px`,
-    fontWeight: field.isBold ? 'bold' : 'normal',
-    fontStyle: field.isItalic ? 'italic' : 'normal',
+  };
+
+  if (isPreviewMode) {
+    return {
+      ...base,
+      color: field.color,
+      fontFamily:
+        field.font === 'Helvetica'
+          ? 'sans-serif'
+          : field.font === 'Courier'
+          ? 'monospace'
+          : 'serif',
+      fontSize: `${Math.max(8, field.fontSize * zoom)}px`,
+      fontWeight: field.isBold ? 'bold' : 'normal',
+      fontStyle: field.isItalic ? 'italic' : 'normal',
+    };
+  }
+
+  return {
+    ...base,
+    fontSize: `${Math.max(8, field.fontSize * 0.75 * zoom)}px`,
   };
 }
 
@@ -74,7 +87,6 @@ interface EditorCanvasProps {
 
 export function EditorCanvas({
   pdfBytes,
-  // pdfDoc: _pdfDoc,
   totalPages,
   currentPage,
   pdfDimensions,
@@ -128,28 +140,50 @@ export function EditorCanvas({
         {isPreviewMode && csvRows.length > 0 && (
           <div className="flex animate-in fade-in items-center gap-1.5">
             <Separator orientation="vertical" className="h-5" />
-            <span className="text-xs font-medium text-muted-foreground">Row</span>
+            <span className="shrink-0 text-xs font-medium text-muted-foreground">Row</span>
             <Button
               variant="outline"
               size="icon"
-              className="size-7"
+              className="size-7 shrink-0"
               disabled={previewRowIndex === 0}
               onClick={() => onPreviewRowChange(Math.max(0, previewRowIndex - 1))}
             >
               <ChevronLeft className="size-3.5" />
             </Button>
-            <span className="min-w-18 text-center text-xs font-semibold tabular-nums">
-              {previewRowIndex + 1} / {csvRows.length}
-            </span>
+            <Select
+              value={String(previewRowIndex)}
+              onValueChange={(val) => onPreviewRowChange(Number(val))}
+            >
+              <SelectTrigger className="h-7 w-44 shrink-0 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position='popper'>
+                {csvRows.map((row, i) => {
+                  const firstVal = String(Object.values(row)[0] ?? '');
+                  const label =
+                    firstVal.length > 22 ? firstVal.slice(0, 22) + '…' : firstVal;
+                  return (
+                    <SelectItem key={i} value={String(i)} className="text-xs">
+                      {i + 1} · {label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               size="icon"
-              className="size-7"
+              className="size-7 shrink-0"
               disabled={previewRowIndex === csvRows.length - 1}
-              onClick={() => onPreviewRowChange(Math.min(csvRows.length - 1, previewRowIndex + 1))}
+              onClick={() =>
+                onPreviewRowChange(Math.min(csvRows.length - 1, previewRowIndex + 1))
+              }
             >
               <ChevronRight className="size-3.5" />
             </Button>
+            <span className="w-12 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
+              {previewRowIndex + 1} / {csvRows.length}
+            </span>
           </div>
         )}
 
@@ -261,8 +295,8 @@ export function EditorCanvas({
               />
             )}
 
-            {/* Drag Overlay Layer */}
-            <div className="absolute inset-0 z-10 cursor-crosshair overflow-hidden">
+            {/* Field overlay layer */}
+            <div className="absolute inset-0 z-10 overflow-hidden">
               {placedFields
                 .filter((field) => field.page === currentPage)
                 .map((field) => {
@@ -275,37 +309,47 @@ export function EditorCanvas({
                   return (
                     <div
                       key={field.id}
-                      style={getFieldStyle(field, zoom)}
+                      style={getFieldStyle(field, zoom, isPreviewMode)}
                       onMouseDown={(e) => onFieldMouseDown(e, field)}
                       onTouchStart={(e) => onFieldTouchStart(e, field)}
                       className={cn(
-                        'absolute z-20 flex rounded border bg-white/15 shadow-md transition-all select-none dark:bg-slate-900/15 active:cursor-grabbing',
+                        'absolute z-20 flex items-center overflow-hidden whitespace-nowrap select-none rounded transition-shadow',
                         isPreviewMode
-                          ? 'cursor-default pointer-events-none'
-                          : 'cursor-grab',
-                        isSelected
-                          ? 'border-primary ring-2 ring-primary/30'
-                          : 'border-slate-200 hover:border-primary/50 hover:shadow-lg dark:border-slate-700'
+                          ? 'pointer-events-none cursor-default bg-transparent'
+                          : cn(
+                              'cursor-grab active:cursor-grabbing',
+                              'bg-zinc-900/85 text-white dark:bg-zinc-100 dark:text-zinc-900',
+                              'pl-1 pr-3 shadow-sm',
+                              isSelected
+                                ? 'ring-2 ring-primary ring-offset-1 ring-offset-white/50 dark:ring-offset-zinc-900/50'
+                                : 'hover:bg-zinc-950/90 dark:hover:bg-white/95'
+                            )
                       )}
                     >
                       {!isPreviewMode && (
                         <Move
-                          className="shrink-0 opacity-40"
-                          style={{ width: '0.9em', height: '0.9em' }}
+                          className="mr-0.5 shrink-0 opacity-50"
+                          style={{ width: '0.85em', height: '0.85em' }}
                         />
                       )}
-                      <span className="flex-1 truncate leading-none select-none">
+                      <span className="truncate leading-none">
                         {displayVal || (
-                          <span className="text-xs italic text-slate-400">empty</span>
+                          <span className="italic opacity-40">empty</span>
                         )}
                       </span>
 
                       {/* Resize grip */}
                       {isSelected && !isPreviewMode && (
                         <div
-                          onMouseDown={(e) => onResizeMouseDown(e, field)}
-                          onTouchStart={(e) => onResizeTouchStart(e, field)}
-                          className="absolute bottom-0 right-0 top-0 flex w-2.5 cursor-ew-resize items-center justify-center rounded-r border-l border-slate-200 bg-slate-50/50 text-[7px] font-bold text-slate-400 select-none hover:bg-primary/20 active:bg-primary/40 dark:border-slate-800 dark:bg-slate-800/50"
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            onResizeMouseDown(e, field);
+                          }}
+                          onTouchStart={(e) => {
+                            e.stopPropagation();
+                            onResizeTouchStart(e, field);
+                          }}
+                          className="absolute bottom-0 right-0 top-0 flex w-2.5 cursor-ew-resize items-center justify-center rounded-r bg-white/20 text-[7px] font-bold text-white/70 select-none hover:bg-white/40 active:bg-white/60 dark:bg-zinc-900/20 dark:text-zinc-900/70 dark:hover:bg-zinc-900/40"
                           title="Drag to resize field width"
                         >
                           ⋮
