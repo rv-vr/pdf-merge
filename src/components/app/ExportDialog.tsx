@@ -83,7 +83,7 @@ export function ExportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[460px]">
+      <DialogContent className="max-w-115">
         {isConfig && (
           <>
             <DialogHeader>
@@ -105,6 +105,7 @@ export function ExportDialog({
                 <div className="flex flex-col gap-2">
                   {/* Single PDF option */}
                   <button
+                    type="button"
                     onClick={() => setMode('combined')}
                     className={cn(
                       'flex gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent/50',
@@ -136,6 +137,7 @@ export function ExportDialog({
 
                   {/* ZIP option */}
                   <button
+                    type="button"
                     onClick={() => setMode('zip')}
                     className={cn(
                       'flex gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent/50',

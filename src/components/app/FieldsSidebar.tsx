@@ -80,7 +80,7 @@ export function FieldsSidebar({
 
         {/* Scrollable content */}
         <ScrollArea className="flex-1 overflow-hidden">
-          <div className="px-3 py-3">
+          <div className="px-3 py-3 w-full">
             {/* Insert Fields section */}
             <div className="mb-2 flex items-center justify-between px-1">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -88,7 +88,7 @@ export function FieldsSidebar({
               </span>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button className="rounded p-0.5 text-muted-foreground hover:text-foreground">
+                  <button type="button" className="rounded p-0.5 text-muted-foreground hover:text-foreground">
                     <Info className="size-3" />
                   </button>
                 </TooltipTrigger>
@@ -109,6 +109,7 @@ export function FieldsSidebar({
                   return (
                     <button
                       key={header}
+                      type="button"
                       onClick={() => onAddField(header)}
                       className="flex w-full items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-left text-sm transition-colors hover:border-primary/30 hover:bg-accent"
                     >
@@ -142,11 +143,12 @@ export function FieldsSidebar({
                 </div>
                 <div className="flex flex-col gap-0.5">
                   {placedFields.map((f) => (
-                    <div
+                    <button
                       key={f.id}
+                      type="button"
                       onClick={() => onSelectField(f.id)}
                       className={cn(
-                        'flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent',
+                        'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent',
                         f.id === selectedFieldId && 'bg-accent'
                       )}
                     >
@@ -170,7 +172,7 @@ export function FieldsSidebar({
                       >
                         <X className="size-3" />
                       </Button>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </>

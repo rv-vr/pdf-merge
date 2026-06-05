@@ -52,6 +52,7 @@ function Dropzone({ kind, file, csvRowCount, csvColCount, onUpload, inputId }: D
         type="file"
         accept={isPdf ? '.pdf' : '.csv'}
         onChange={onUpload}
+        aria-label={isPdf ? 'Upload PDF template' : 'Upload CSV dataset'}
         className="absolute inset-0 cursor-pointer opacity-0"
         style={{ zIndex: -1 }}
       />
@@ -68,7 +69,7 @@ function Dropzone({ kind, file, csvRowCount, csvColCount, onUpload, inputId }: D
             </div>
             <div>
               <div className="flex items-center justify-center gap-2">
-                <span className="max-w-[200px] truncate text-sm font-semibold">{file.name}</span>
+                <span className="max-w-50 truncate text-sm font-semibold">{file.name}</span>
                 <Badge variant="secondary" className="gap-1 text-[10px]">
                   <Check className="size-2.5" />
                   Ready
@@ -107,7 +108,7 @@ function Dropzone({ kind, file, csvRowCount, csvColCount, onUpload, inputId }: D
               <p className="text-sm font-semibold">
                 {isPdf ? 'Template PDF' : 'CSV Dataset'}
               </p>
-              <p className="mt-1.5 max-w-[200px] text-xs leading-relaxed text-muted-foreground">
+              <p className="mt-1.5 max-w-50 text-xs leading-relaxed text-muted-foreground">
                 {isPdf
                   ? 'Certificate, invoice, or form to merge data into'
                   : 'The records — one row becomes one merged document'}
@@ -216,8 +217,8 @@ export function UploadScreen({
 
         {/* Load sample shortcut */}
         <button
+          type="button"
           onClick={() => {
-            // Trigger a synthetic upload to show users what to do
             document.getElementById('pdf-upload')?.click();
           }}
           className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"

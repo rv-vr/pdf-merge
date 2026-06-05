@@ -224,7 +224,9 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
               {COLOR_SWATCHES.map((color) => (
                 <button
                   key={color}
+                  type="button"
                   onClick={() => onUpdate({ color })}
+                  aria-label={color}
                   title={color}
                   style={{ backgroundColor: color }}
                   className={cn(
@@ -243,6 +245,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                 className="relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-border"
                 style={{ backgroundColor: selectedField.color }}
                 title="Pick custom color"
+                aria-label="Pick custom color"
               >
                 <input
                   type="color"
@@ -260,6 +263,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                     const v = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
                     onUpdate({ color: '#' + v });
                   }}
+                  aria-label="Hex color value"
                   className="flex-1 bg-transparent font-mono text-sm uppercase outline-none placeholder:text-muted-foreground"
                   placeholder="000000"
                   maxLength={6}

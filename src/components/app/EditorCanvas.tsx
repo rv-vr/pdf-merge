@@ -109,6 +109,7 @@ export function EditorCanvas({
 
       {/* Canvas Workspace */}
       <div
+        role="none"
         className="flex flex-1 items-start justify-center overflow-auto bg-muted/30 p-8"
         onMouseDown={() => !isPreviewMode && onSelectField(null)}
       >
@@ -138,18 +139,19 @@ export function EditorCanvas({
 
             {/* Field overlay layer */}
             <div className="absolute inset-0 z-10 overflow-hidden">
-              {placedFields
-                .filter((field) => field.page === currentPage)
-                .map((field) => {
+              {placedFields.flatMap((field) => {
+                  if (field.page !== currentPage) return [];
                   const isSelected = field.id === selectedFieldId;
                   const displayVal =
                     isPreviewMode && csvRows[previewRowIndex]
                       ? csvRows[previewRowIndex][field.fieldName] || ''
                       : `{{${field.fieldName}}}`;
 
-                  return (
+                  return [(
                     <div
                       key={field.id}
+                      role={isPreviewMode ? undefined : 'button'}
+                      tabIndex={isPreviewMode ? undefined : 0}
                       style={getFieldStyle(field, zoom, isPreviewMode)}
                       onMouseDown={(e) => onFieldMouseDown(e, field)}
                       onTouchStart={(e) => onFieldTouchStart(e, field)}
@@ -181,7 +183,9 @@ export function EditorCanvas({
 
                       {/* Resize grip */}
                       {isSelected && !isPreviewMode && (
-                        <div
+                        <button
+                          type="button"
+                          tabIndex={0}
                           onMouseDown={(e) => {
                             e.stopPropagation();
                             onResizeMouseDown(e, field);
@@ -191,13 +195,14 @@ export function EditorCanvas({
                             onResizeTouchStart(e, field);
                           }}
                           className="absolute bottom-0 right-0 top-0 flex w-2.5 cursor-ew-resize items-center justify-center rounded-r bg-white/20 text-[7px] font-bold text-white/70 select-none hover:bg-white/40 active:bg-white/60 dark:bg-zinc-900/20 dark:text-zinc-900/70 dark:hover:bg-zinc-900/40"
+                          aria-label="Drag to resize field width"
                           title="Drag to resize field width"
                         >
                           ⋮
-                        </div>
+                        </button>
                       )}
                     </div>
-                  );
+                  )];
                 })}
             </div>
           </div>
