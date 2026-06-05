@@ -32,7 +32,7 @@ export interface PlacedField {
  * Translates page percentage coordinates from the screen canvas (top-left origin)
  * into PDF points (bottom-left origin).
  */
-export function translateCoordinates(
+function translateCoordinates(
   xPercent: number,
   yPercent: number,
   pdfWidth: number,
@@ -97,7 +97,7 @@ async function getEmbeddedFont(
 /**
  * Generates a single merged PDF with values replaced for a specific CSV row.
  */
-export async function generateSingleMergedPDF(
+async function generateSingleMergedPDF(
   templateBytes: ArrayBuffer,
   row: Record<string, string>,
   fields: PlacedField[]
@@ -105,18 +105,33 @@ export async function generateSingleMergedPDF(
   const pdfDoc = await PDFDocument.load(templateBytes.slice(0));
   const pages = pdfDoc.getPages();
 
+  // Pre-load all unique font combinations in parallel — avoids await inside the field loop
+  const uniqueFontKeys = [...new Set(fields.map((f) => `${f.font}|${f.isBold}|${f.isItalic}`))];
+  const fontEntries = await Promise.all(
+    uniqueFontKeys.map(async (key) => {
+      const [fontType, isBoldStr, isItalicStr] = key.split('|');
+      const font = await getEmbeddedFont(
+        pdfDoc,
+        fontType as 'Helvetica' | 'Times-Roman' | 'Courier',
+        isBoldStr === 'true',
+        isItalicStr === 'true'
+      );
+      return [key, font] as const;
+    })
+  );
+  const fontCache = new Map(fontEntries);
+
   for (const field of fields) {
     const pageIndex = field.page - 1;
     if (pageIndex < 0 || pageIndex >= pages.length) continue;
 
     const page = pages[pageIndex];
     const { width: pdfWidth, height: pdfHeight } = page.getSize();
-    
+
     // Resolve the value from the CSV row, fallback to field placeholder name
     const textValue = row[field.fieldName] !== undefined ? row[field.fieldName] : `{{${field.fieldName}}}`;
 
-    // Resolve font
-    const font = await getEmbeddedFont(pdfDoc, field.font, field.isBold, field.isItalic);
+    const font = fontCache.get(`${field.font}|${field.isBold}|${field.isItalic}`)!;
     
     // Translate coordinate (canvas top-left percentage -> PDF bottom-left points)
     const { x, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
