@@ -15,9 +15,14 @@ import { useExport } from '@/hooks/useExport';
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://unpkg.com/pdfjs-dist@6.0.227/build/pdf.worker.min.mjs';
 
+const THEME_STORAGE_KEY = 'pdf-merger-theme';
+
 export default function App() {
   const [view, setView] = useState<'upload' | 'editor'>('upload');
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
+  });
 
   const pdf = usePdf(view);
   const csv = useCsv();
@@ -28,6 +33,7 @@ export default function App() {
     const root = window.document.documentElement;
     if (isDarkMode) root.classList.add('dark');
     else root.classList.remove('dark');
+    window.localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +47,7 @@ export default function App() {
       <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
         <NavBar
           isDarkMode={isDarkMode}
-          onToggleDark={() => setIsDarkMode(!isDarkMode)}
+          onToggleDark={() => setIsDarkMode((current) => !current)}
           canExport={
             view === 'editor' &&
             !!pdf.pdfBytes &&
