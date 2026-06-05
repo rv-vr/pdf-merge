@@ -55,16 +55,15 @@ export function FieldsSidebar({
         {/* Dataset summary */}
         <div className="shrink-0 border-b border-border px-4 py-3">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <FileSpreadsheet className="size-4" />
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <FileSpreadsheet className="size-3.5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold leading-tight">{csvFileName || 'No CSV loaded'}</p>
+              <p className="truncate text-xs font-medium leading-tight">{csvFileName || 'No CSV loaded'}</p>
               <p className="text-[11px] text-muted-foreground">
                 {csvHeaders.length} columns · {csvRows.length} rows
               </p>
             </div>
-            <Badge variant="outline" className="shrink-0 text-[10px]">CSV</Badge>
           </div>
           {/* Search */}
           <div className="relative">
@@ -83,8 +82,8 @@ export function FieldsSidebar({
           <div className="px-3 py-3">
             {/* Insert Fields section */}
             <div className="mb-2 flex items-center justify-between px-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Insert Fields
+              <span className="text-xs font-semibold text-muted-foreground">
+                Insert fields
               </span>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -111,7 +110,7 @@ export function FieldsSidebar({
                       key={header}
                       type="button"
                       onClick={() => onAddField(header)}
-                      className="flex w-full items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-left text-sm transition-colors hover:border-primary/30 hover:bg-accent"
+                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-accent"
                     >
                       <span className="text-muted-foreground">{getColumnIcon(header)}</span>
                       <span className="min-w-0 flex-1">
@@ -137,8 +136,8 @@ export function FieldsSidebar({
               <>
                 <Separator className="my-3" />
                 <div className="mb-2 px-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Placed on Template ({placedFields.length})
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Placed on template ({placedFields.length})
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -149,7 +148,7 @@ export function FieldsSidebar({
                       onClick={() => onSelectField(f.id)}
                       className={cn(
                         'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent',
-                        f.id === selectedFieldId && 'bg-accent'
+                        f.id === selectedFieldId && 'bg-accent ring-1 ring-ring/20'
                       )}
                     >
                       <GripVertical className="size-3.5 shrink-0 cursor-grab text-muted-foreground" />

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { FileText, FileUp, RotateCcw, Check, ChevronRight, Sparkles } from 'lucide-react';
+import { FileText, FileUp, RotateCcw, Check, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 interface DropzoneProps {
@@ -36,11 +34,14 @@ function Dropzone({ kind, file, csvRowCount, csvColCount, onUpload, inputId }: D
   };
 
   return (
-    <Card
+    <div
       className={cn(
-        'relative cursor-pointer transition-colors',
-        hover && 'border-primary/50 bg-accent/30',
-        file && 'border-border'
+        'relative flex flex-col items-center gap-3 rounded-lg border p-6 text-center transition-colors cursor-pointer',
+        hover
+          ? 'border-foreground/20 bg-accent/40'
+          : file
+          ? 'border-border bg-background'
+          : 'border-dashed border-border bg-background hover:border-foreground/20 hover:bg-accent/20'
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -56,81 +57,81 @@ function Dropzone({ kind, file, csvRowCount, csvColCount, onUpload, inputId }: D
         className="absolute inset-0 cursor-pointer opacity-0"
         style={{ zIndex: -1 }}
       />
-      <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
-        {file ? (
-          <>
-            <div
-              className={cn(
-                'flex size-12 items-center justify-center rounded-xl',
-                isPdf ? 'bg-red-50 text-red-500 dark:bg-red-950/30' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30'
-              )}
-            >
-              <FileText className="size-6" />
+
+      {file ? (
+        <>
+          <div
+            className={cn(
+              'flex size-10 items-center justify-center rounded-lg',
+              isPdf
+                ? 'bg-red-50 text-red-500 dark:bg-red-950/30'
+                : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30'
+            )}
+          >
+            <FileText className="size-5" />
+          </div>
+          <div>
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="max-w-48 truncate text-sm font-medium">{file.name}</span>
+              <Badge variant="secondary" className="gap-1 px-1.5 text-[10px]">
+                <Check className="size-2.5" />
+                Ready
+              </Badge>
             </div>
-            <div>
-              <div className="flex items-center justify-center gap-2">
-                <span className="max-w-50 truncate text-sm font-semibold">{file.name}</span>
-                <Badge variant="secondary" className="gap-1 text-[10px]">
-                  <Check className="size-2.5" />
-                  Ready
-                </Badge>
-              </div>
-              {!isPdf && csvRowCount !== undefined && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {csvRowCount} rows · {csvColCount} columns
-                </p>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                document.getElementById(inputId)?.click();
-              }}
-              className="gap-1.5 text-xs text-muted-foreground"
-            >
-              <RotateCcw className="size-3" />
-              Replace
-            </Button>
-          </>
-        ) : (
-          <>
-            <div
-              className={cn(
-                'flex size-12 items-center justify-center rounded-xl bg-muted',
-                isPdf ? 'text-muted-foreground' : 'text-muted-foreground'
-              )}
-            >
-              <FileText className="size-6" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">
-                {isPdf ? 'Template PDF' : 'CSV Dataset'}
+            {!isPdf && csvRowCount !== undefined && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {csvRowCount} rows · {csvColCount} columns
               </p>
-              <p className="mt-1.5 max-w-50 text-xs leading-relaxed text-muted-foreground">
-                {isPdf
-                  ? 'Certificate, invoice, or form to merge data into'
-                  : 'The records — one row becomes one merged document'}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                document.getElementById(inputId)?.click();
-              }}
-              className="gap-1.5"
-            >
-              <FileUp className="size-3.5" />
-              Choose {isPdf ? '.pdf' : '.csv'} file
-            </Button>
-            <p className="text-xs text-muted-foreground">or drop it here</p>
-          </>
-        )}
-      </CardContent>
-    </Card>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              document.getElementById(inputId)?.click();
+            }}
+            className="h-7 gap-1.5 text-xs text-muted-foreground"
+          >
+            <RotateCcw className="size-3" />
+            Replace
+          </Button>
+        </>
+      ) : (
+        <>
+          <div
+            className={cn(
+              'flex size-10 items-center justify-center rounded-lg',
+              isPdf
+                ? 'bg-red-50/80 text-red-400 dark:bg-red-950/25 dark:text-red-500'
+                : 'bg-emerald-50/80 text-emerald-500 dark:bg-emerald-950/25 dark:text-emerald-500'
+            )}
+          >
+            <FileText className="size-5" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">{isPdf ? 'Template PDF' : 'CSV Dataset'}</p>
+            <p className="mt-1 max-w-44 text-xs leading-relaxed text-muted-foreground">
+              {isPdf
+                ? 'Certificate, invoice, or form to merge data into'
+                : 'The records — one row becomes one merged document'}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              document.getElementById(inputId)?.click();
+            }}
+            className="h-7 gap-1.5 text-xs"
+          >
+            <FileUp className="size-3.5" />
+            Choose {isPdf ? '.pdf' : '.csv'}
+          </Button>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -155,7 +156,6 @@ export function UploadScreen({
 }: UploadScreenProps) {
   const ready = !!pdfFile && csvRows.length > 0;
 
-  // Create a mock File-like for CSV display (we only have metadata)
   const csvFile = csvRows.length > 0 ? ({ name: _csvFileName || 'data.csv' } as File) : null;
 
   const statusText = ready
@@ -165,67 +165,39 @@ export function UploadScreen({
     : 'Upload both files to continue';
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 overflow-auto bg-muted/30 p-8">
-      <div className="flex w-full max-w-2xl flex-col items-center gap-8">
+    <div className="flex flex-1 flex-col items-center justify-center overflow-auto bg-muted/20 p-8">
+      <div className="flex w-full max-w-xl flex-col items-center gap-8">
         {/* Header */}
-        <div className="flex flex-col items-center gap-3 text-center">
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <h1 className="text-3xl font-bold tracking-tight">
             Bulk-merge your dataset into a PDF
           </h1>
-          <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-            Upload a template and a CSV, place fields where the data should go, then export
-            hundreds of personalized PDFs at once.
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Upload a template and a CSV, place fields, then export hundreds of personalized PDFs.
           </p>
         </div>
 
         {/* Dropzones */}
-        <Card className="w-full">
-          <CardContent className="p-5">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Dropzone
-                kind="pdf"
-                file={pdfFile}
-                onUpload={onPdfUpload}
-                inputId="pdf-upload"
-              />
-              <Dropzone
-                kind="csv"
-                file={csvFile}
-                csvRowCount={csvRows.length}
-                csvColCount={csvHeaders.length}
-                onUpload={onCsvUpload}
-                inputId="csv-upload"
-              />
-            </div>
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+          <Dropzone kind="pdf" file={pdfFile} onUpload={onPdfUpload} inputId="pdf-upload" />
+          <Dropzone
+            kind="csv"
+            file={csvFile}
+            csvRowCount={csvRows.length}
+            csvColCount={csvHeaders.length}
+            onUpload={onCsvUpload}
+            inputId="csv-upload"
+          />
+        </div>
 
-            <Separator className="my-5" />
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{statusText}</span>
-              <Button
-                disabled={!ready}
-                onClick={onContinue}
-                size="lg"
-                className="gap-2"
-              >
-                Open editor
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Load sample shortcut */}
-        <button
-          type="button"
-          onClick={() => {
-            document.getElementById('pdf-upload')?.click();
-          }}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <Sparkles className="size-3" />
-          Upload a PDF template to get started
-        </button>
+        {/* Footer */}
+        <div className="flex w-full items-center justify-between">
+          <span className="text-xs text-muted-foreground">{statusText}</span>
+          <Button disabled={!ready} onClick={onContinue} size="sm" className="gap-1.5">
+            Open editor
+            <ChevronRight className="size-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

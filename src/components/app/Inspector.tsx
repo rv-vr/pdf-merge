@@ -46,7 +46,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
   return (
     <div className="flex h-full w-75 shrink-0 flex-col overflow-hidden border-l border-border bg-card">
       {/* Header */}
-      <div className="flex h-13 shrink-0 items-center gap-2 border-b border-border px-4">
+      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-4">
         <Tag className="size-4 text-muted-foreground" />
         <span className="text-sm font-semibold">Field Inspector</span>
       </div>
@@ -68,7 +68,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
       ) : (
         <ScrollArea className="flex-1">
           {/* Field header */}
-          <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+          <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Tag className="size-4" />
             </div>
@@ -101,8 +101,8 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
           </div>
 
           {/* Typography group */}
-          <div className="flex flex-col gap-3 px-4 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-col gap-3 px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground">
               Typography
             </p>
 
@@ -214,8 +214,8 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
           <Separator />
 
           {/* Color group */}
-          <div className="flex flex-col gap-3 px-4 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-col gap-3 px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground">
               Color
             </p>
 
@@ -230,10 +230,10 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                   title={color}
                   style={{ backgroundColor: color }}
                   className={cn(
-                    'size-6 rounded border border-border shadow-sm transition-transform hover:scale-105 active:scale-95',
+                    'size-7 rounded border border-border shadow-sm transition-transform hover:scale-105 active:scale-95',
                     color.toLowerCase() === '#ffffff' && 'border-border',
                     selectedField.color.toLowerCase() === color.toLowerCase() &&
-                      'scale-110 ring-2 ring-primary ring-offset-1'
+                      'scale-110 ring-2 ring-ring ring-offset-2'
                   )}
                 />
               ))}
@@ -275,9 +275,9 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
           <Separator />
 
           {/* Position & size group */}
-          <div className="flex flex-col gap-3 px-4 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Position &amp; Size
+          <div className="flex flex-col gap-3 px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground">
+              Position &amp; size
             </p>
 
             <div className="grid grid-cols-3 gap-2">
