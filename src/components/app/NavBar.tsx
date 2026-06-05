@@ -43,9 +43,6 @@ export function NavBar({
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-bold leading-tight tracking-tight">PDF Data Merger</span>
-          <span className="hidden text-[10px] text-muted-foreground sm:block">
-            100% client-side · secure local processing
-          </span>
         </div>
 
         {view === 'editor' && pdfFileName && (
@@ -61,7 +58,7 @@ export function NavBar({
             </Button>
             <div className="flex items-center gap-2 text-sm">
               <FileText className="size-3.5 text-muted-foreground" />
-              <span className="max-w-[180px] truncate font-medium">{pdfFileName}</span>
+              <span className="max-w-45 truncate font-medium">{pdfFileName}</span>
               {csvRowCount !== undefined && (
                 <Badge variant="secondary" className="text-[10px]">
                   {csvRowCount} records
