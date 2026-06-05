@@ -8,7 +8,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { PlacedField } from '@/types';
@@ -52,8 +51,7 @@ export function FieldsSidebar({
   const countOf = (col: string) => placedFields.filter((f) => f.fieldName === col).length;
 
   return (
-    <TooltipProvider>
-      <div className="flex h-full w-[268px] shrink-0 flex-col overflow-hidden border-r border-border bg-card">
+      <div className="flex min-h-0 w-67 shrink-0 flex-col overflow-hidden border-r border-border bg-card">
         {/* Dataset summary */}
         <div className="shrink-0 border-b border-border px-4 py-3">
           <div className="mb-3 flex items-center gap-2">
@@ -81,7 +79,7 @@ export function FieldsSidebar({
         </div>
 
         {/* Scrollable content */}
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 overflow-hidden">
           <div className="px-3 py-3">
             {/* Insert Fields section */}
             <div className="mb-2 flex items-center justify-between px-1">
@@ -94,7 +92,7 @@ export function FieldsSidebar({
                     <Info className="size-3" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[180px] text-xs">
+                <TooltipContent side="right" className="max-w-45 text-xs">
                   Click a column to place it on the PDF canvas
                 </TooltipContent>
               </Tooltip>
@@ -180,6 +178,5 @@ export function FieldsSidebar({
           </div>
         </ScrollArea>
       </div>
-    </TooltipProvider>
   );
 }
