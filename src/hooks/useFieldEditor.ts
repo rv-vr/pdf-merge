@@ -111,6 +111,7 @@ export function useFieldEditor(currentPage: number) {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault(); // prevent page scroll during field drag
       const container = containerRef.current;
       if (!container) return;
       const touch = e.touches[0];
@@ -159,6 +160,7 @@ export function useFieldEditor(currentPage: number) {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault(); // prevent page scroll during field resize
       const container = containerRef.current;
       if (!container) return;
       const touch = e.touches[0];
