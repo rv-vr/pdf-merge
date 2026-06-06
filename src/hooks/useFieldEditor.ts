@@ -28,7 +28,6 @@ export function useFieldEditor(currentPage: number) {
   const [resizingFieldId, setResizingFieldId] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewRowIndex, setPreviewRowIndex] = useState(0);
-  const [lastFieldProperties, setLastFieldProperties] = useState<FieldProps>(DEFAULT_FIELD_PROPS);
 
   // Undo / Redo stacks (max 50 entries each)
   const [undoStack, setUndoStack] = useState<PlacedField[][]>([]);
@@ -39,9 +38,18 @@ export function useFieldEditor(currentPage: number) {
   const resizeStartWidth = useRef<number>(0);
   const resizeStartPointerX = useRef<number>(0);
 
-  // placedFields ref for use inside event handlers without stale closure
+  // Ref mirrors — kept current so event handlers avoid stale closures.
+  // Writing to refs inside effects is fine (no cascading setState).
   const placedFieldsRef = useRef(placedFields);
+  const selectedFieldIdRef = useRef(selectedFieldId);
+  // Tracks the last non-null selectedFieldId so new fields can inherit its properties.
+  const lastSelectedFieldIdRef = useRef<string | null>(null);
+
   useEffect(() => { placedFieldsRef.current = placedFields; }, [placedFields]);
+  useEffect(() => {
+    selectedFieldIdRef.current = selectedFieldId;
+    if (selectedFieldId !== null) lastSelectedFieldIdRef.current = selectedFieldId;
+  }, [selectedFieldId]);
 
   const canUndo = undoStack.length > 0;
   const canRedo = redoStack.length > 0;
@@ -73,22 +81,6 @@ export function useFieldEditor(currentPage: number) {
   }, []);
 
   useEffect(() => {
-    if (!selectedFieldId) return;
-    const selected = placedFields.find((f) => f.id === selectedFieldId);
-    if (selected) {
-      setLastFieldProperties({
-        font: selected.font,
-        fontSize: selected.fontSize,
-        color: selected.color,
-        isBold: selected.isBold,
-        isItalic: selected.isItalic,
-        width: selected.width,
-        align: selected.align ?? 'left',
-      });
-    }
-  }, [placedFields, selectedFieldId]);
-
-  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
       const isInputFocused =
@@ -113,58 +105,90 @@ export function useFieldEditor(currentPage: number) {
         }
       }
 
-      if (!selectedFieldId || isInputFocused) return;
+      const id = selectedFieldIdRef.current;
+      if (!id || isInputFocused) return;
 
-      // Bold / Italic shortcuts
-      if (ctrl && e.key === 'b') {
-        e.preventDefault();
-        snapshot();
-        setPlacedFields((prev) =>
-          prev.map((f) => (f.id === selectedFieldId ? { ...f, isBold: !f.isBold } : f))
-        );
-        return;
-      }
-      if (ctrl && e.key === 'i') {
-        e.preventDefault();
-        snapshot();
-        setPlacedFields((prev) =>
-          prev.map((f) => (f.id === selectedFieldId ? { ...f, isItalic: !f.isItalic } : f))
-        );
-        return;
+      if (ctrl) {
+        // Bold / Italic
+        if (e.key === 'b') {
+          e.preventDefault();
+          snapshot();
+          setPlacedFields((prev) =>
+            prev.map((f) => (f.id === id ? { ...f, isBold: !f.isBold } : f))
+          );
+          return;
+        }
+        if (e.key === 'i') {
+          e.preventDefault();
+          snapshot();
+          setPlacedFields((prev) =>
+            prev.map((f) => (f.id === id ? { ...f, isItalic: !f.isItalic } : f))
+          );
+          return;
+        }
+        // Alignment (Google Docs shortcuts)
+        if (e.shiftKey) {
+          if (e.key === 'L') {
+            e.preventDefault();
+            snapshot();
+            setPlacedFields((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, align: 'left' } : f))
+            );
+            return;
+          }
+          if (e.key === 'E') {
+            e.preventDefault();
+            snapshot();
+            setPlacedFields((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, align: 'center' } : f))
+            );
+            return;
+          }
+          if (e.key === 'R') {
+            e.preventDefault();
+            snapshot();
+            setPlacedFields((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, align: 'right' } : f))
+            );
+            return;
+          }
+        }
       }
 
-      // Arrow-key nudge
-      const step = e.shiftKey ? 2.0 : 0.5;
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        setPlacedFields((prev) =>
-          prev.map((f) => (f.id === selectedFieldId ? { ...f, x: Math.max(0, f.x - step) } : f))
-        );
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        setPlacedFields((prev) =>
-          prev.map((f) => (f.id === selectedFieldId ? { ...f, x: Math.min(100, f.x + step) } : f))
-        );
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setPlacedFields((prev) =>
-          prev.map((f) => (f.id === selectedFieldId ? { ...f, y: Math.max(0, f.y - step) } : f))
-        );
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setPlacedFields((prev) =>
-          prev.map((f) => (f.id === selectedFieldId ? { ...f, y: Math.min(100, f.y + step) } : f))
-        );
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        snapshot();
-        setPlacedFields((prev) => prev.filter((f) => f.id !== selectedFieldId));
-        setSelectedFieldId(null);
+      // Arrow-key nudge (no ctrl)
+      if (!ctrl) {
+        const step = e.shiftKey ? 2.0 : 0.5;
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          setPlacedFields((prev) =>
+            prev.map((f) => (f.id === id ? { ...f, x: Math.max(0, f.x - step) } : f))
+          );
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          setPlacedFields((prev) =>
+            prev.map((f) => (f.id === id ? { ...f, x: Math.min(100, f.x + step) } : f))
+          );
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setPlacedFields((prev) =>
+            prev.map((f) => (f.id === id ? { ...f, y: Math.max(0, f.y - step) } : f))
+          );
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setPlacedFields((prev) =>
+            prev.map((f) => (f.id === id ? { ...f, y: Math.min(100, f.y + step) } : f))
+          );
+        } else if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault();
+          snapshot();
+          setPlacedFields((prev) => prev.filter((f) => f.id !== id));
+          setSelectedFieldId(null);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedFieldId, snapshot, undo, redo]);
+  }, [snapshot, undo, redo]);
 
   useEffect(() => {
     if (!draggingFieldId) return;
@@ -266,13 +290,29 @@ export function useFieldEditor(currentPage: number) {
 
   const addFieldToPage = (header: string) => {
     snapshot();
+    // Look up properties from the currently selected field, or the last selected one, or fall back to defaults.
+    const sourceField =
+      placedFieldsRef.current.find((f) => f.id === selectedFieldIdRef.current) ??
+      placedFieldsRef.current.find((f) => f.id === lastSelectedFieldIdRef.current);
+    const props: FieldProps = sourceField
+      ? {
+          font: sourceField.font,
+          fontSize: sourceField.fontSize,
+          color: sourceField.color,
+          isBold: sourceField.isBold,
+          isItalic: sourceField.isItalic,
+          width: sourceField.width,
+          align: sourceField.align ?? 'left',
+        }
+      : DEFAULT_FIELD_PROPS;
+
     const newField: PlacedField = {
       id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       fieldName: header,
       x: 40,
       y: 45,
       page: currentPage,
-      ...lastFieldProperties,
+      ...props,
     };
     setPlacedFields((prev) => [...prev, newField]);
     setSelectedFieldId(newField.id);
@@ -290,13 +330,31 @@ export function useFieldEditor(currentPage: number) {
     setSelectedFieldId(newField.id);
   };
 
-  const updateSelectedField = (updates: Partial<PlacedField>) => {
-    if (!selectedFieldId) return;
+  // Stable ref-based update — no snapshot. Safe to use in long-lived event listeners
+  // (e.g. native color picker 'change') because it reads selectedFieldId from the ref,
+  // not a stale closure.
+  const updateSelectedField = useCallback((updates: Partial<PlacedField>) => {
+    const id = selectedFieldIdRef.current;
+    if (!id) return;
+    setPlacedFields((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...updates } : f))
+    );
+  }, []);
+
+  // Snapshot the current state (call at end of continuous interaction — onBlur, onValueCommit, color picker close).
+  const commitSelectedField = useCallback(() => {
+    snapshot();
+  }, [snapshot]);
+
+  // Snapshot + update in one step — for discrete one-shot changes (font family, bold, italic, alignment).
+  const updateAndCommitField = useCallback((updates: Partial<PlacedField>) => {
+    const id = selectedFieldIdRef.current;
+    if (!id) return;
     snapshot();
     setPlacedFields((prev) =>
-      prev.map((f) => (f.id === selectedFieldId ? { ...f, ...updates } : f))
+      prev.map((f) => (f.id === id ? { ...f, ...updates } : f))
     );
-  };
+  }, [snapshot]);
 
   const removeField = (id: string) => {
     snapshot();
@@ -308,6 +366,25 @@ export function useFieldEditor(currentPage: number) {
     snapshot();
     setPlacedFields([]);
     setSelectedFieldId(null);
+  };
+
+  // Layer ordering — renders last = appears on top (both DOM and pdf-lib draw order)
+  const moveFieldToFront = (id: string) => {
+    snapshot();
+    setPlacedFields((prev) => {
+      const field = prev.find((f) => f.id === id);
+      if (!field) return prev;
+      return [...prev.filter((f) => f.id !== id), field];
+    });
+  };
+
+  const moveFieldToBack = (id: string) => {
+    snapshot();
+    setPlacedFields((prev) => {
+      const field = prev.find((f) => f.id === id);
+      if (!field) return prev;
+      return [field, ...prev.filter((f) => f.id !== id)];
+    });
   };
 
   const handleMouseDown = (e: React.MouseEvent, field: PlacedField) => {
@@ -384,8 +461,12 @@ export function useFieldEditor(currentPage: number) {
     addFieldToPage,
     handleDuplicateField,
     updateSelectedField,
+    commitSelectedField,
+    updateAndCommitField,
     removeField,
     clearAllFields,
+    moveFieldToFront,
+    moveFieldToBack,
     undo,
     redo,
     handleMouseDown,
