@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils';
 import { CanvasToolbar } from '@/components/app/CanvasToolbar';
 
 function fontFamilyFor(font: PlacedField['font']): string {
-  if (font === 'Courier') return 'monospace';
-  if (font === 'Times-Roman') return 'serif';
-  return 'sans-serif';
+  if (font === 'Courier') return '"Courier New", Courier, monospace';
+  if (font === 'Times-Roman') return '"Times New Roman", Times, Georgia, serif';
+  return 'Helvetica, "Helvetica Neue", Arial, sans-serif';
 }
 
 function getFieldStyle(
