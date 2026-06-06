@@ -25,7 +25,7 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'PDF Merger',
+        name: 'PDF Merge',
         short_name: 'PDFMerger',
         description: 'Bulk-fill PDF templates with CSV data. Place fields, style typography, preview rows, and export — all in your browser.',
         theme_color: '#863bff',

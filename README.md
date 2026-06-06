@@ -1,4 +1,4 @@
-# PDF Merger
+# PDF Merge
 
 A secure, 100% client-side tool to bulk-merge CSV datasets into PDF templates.
 

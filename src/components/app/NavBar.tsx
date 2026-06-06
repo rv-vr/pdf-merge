@@ -92,7 +92,7 @@ export function NavBar({
           <FileText className="size-4" />
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-bold leading-tight tracking-tight">PDF Merger</span>
+          <span className="text-sm font-bold leading-tight tracking-tight">PDF Merge</span>
         </div>
 
         {view === 'editor' && pdfFileName && (
@@ -166,7 +166,7 @@ export function NavBar({
       <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>How to Use PDF Merger</DialogTitle>
+            <DialogTitle>How to Use PDF Merge</DialogTitle>
             <DialogDescription>
               Follow these steps to bulk-generate customized documents:
             </DialogDescription>
