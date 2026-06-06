@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { PlacedField } from '@/types';
 import { cn } from '@/lib/utils';
 import { CanvasToolbar } from '@/components/app/CanvasToolbar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function fontFamilyFor(font: PlacedField['font']): string {
   if (font === 'Courier') return '"Courier New", Courier, monospace';
@@ -46,6 +47,58 @@ function getFieldStyle(
     fontWeight: field.isBold ? 'bold' : 'normal',
     fontStyle: field.isItalic ? 'italic' : 'normal',
   };
+}
+
+function PdfPageSkeleton({ width, height }: { width: number; height: number }) {
+  const w = width || 600;
+  const h = height || Math.round(w * 1.414);
+  return (
+    <div style={{ width: w, height: h }} className="flex flex-col gap-3 bg-white p-8">
+      <Skeleton className="h-5 w-2/3 bg-zinc-100" />
+      <Skeleton className="h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-4/5 bg-zinc-100" />
+      <Skeleton className="mt-2 h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-3/4 bg-zinc-100" />
+      <Skeleton className="mt-2 h-24 w-full bg-zinc-100" />
+      <Skeleton className="mt-2 h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-5/6 bg-zinc-100" />
+    </div>
+  );
+}
+
+interface PdfPageWithFadeProps {
+  pageNumber: number;
+  scale: number;
+  pdfDimensions: { width: number; height: number };
+  onLoadSuccess: (page: { width: number; height: number }) => void;
+}
+
+function PdfPageWithFade({ pageNumber, scale, pdfDimensions, onLoadSuccess }: PdfPageWithFadeProps) {
+  const [rendered, setRendered] = React.useState(false);
+  return (
+    <div className="relative">
+      <Page
+        pageNumber={pageNumber}
+        scale={scale}
+        renderTextLayer={false}
+        renderAnnotationLayer={false}
+        onLoadSuccess={onLoadSuccess}
+        onRenderSuccess={() => setRendered(true)}
+        loading={<PdfPageSkeleton width={pdfDimensions.width} height={pdfDimensions.height} />}
+      />
+      {/* Skeleton cover fades out once canvas is painted */}
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 transition-opacity duration-500',
+          rendered ? 'opacity-0' : 'opacity-100'
+        )}
+      >
+        <PdfPageSkeleton width={pdfDimensions.width} height={pdfDimensions.height} />
+      </div>
+    </div>
+  );
 }
 
 interface EditorCanvasProps {
@@ -111,6 +164,7 @@ export function EditorCanvas({
     return pdfBytes ? pdfBytes.slice(0) : null;
   }, [pdfBytes]);
 
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <CanvasToolbar
@@ -151,15 +205,14 @@ export function EditorCanvas({
             <Document
               file={memoizedFile}
               onLoadSuccess={({ numPages }) => onLoadSuccess(numPages)}
-              loading={<div className="flex h-40 w-60 items-center justify-center text-xs text-muted-foreground">Loading PDF...</div>}
+              loading={<PdfPageSkeleton width={pdfDimensions.width} height={pdfDimensions.height} />}
             >
-              <Page
+              <PdfPageWithFade
+                key={currentPage}
                 pageNumber={currentPage}
                 scale={zoom}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
+                pdfDimensions={pdfDimensions}
                 onLoadSuccess={(page) => onPageRenderSuccess(page.width, page.height)}
-                loading={<div className="flex h-40 w-60 items-center justify-center text-xs text-muted-foreground">Rendering page...</div>}
               />
             </Document>
 
