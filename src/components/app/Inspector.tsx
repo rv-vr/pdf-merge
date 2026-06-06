@@ -119,24 +119,6 @@ export function Inspector({
               variant="ghost"
               size="icon"
               className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={() => onMoveToBack(selectedField.id)}
-              title="Send to back (render behind all fields)"
-            >
-              <ArrowDownToLine className="size-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={() => onMoveToFront(selectedField.id)}
-              title="Bring to front (render above all fields)"
-            >
-              <ArrowUpToLine className="size-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
               onClick={() => onDuplicate(selectedField)}
               title="Duplicate field"
             >
@@ -371,6 +353,35 @@ export function Inspector({
               <Info className="size-3 shrink-0" />
               Arrow keys nudge position. Hold Shift for larger steps.
             </p>
+          </div>
+
+          <Separator />
+
+          {/* Layer order group */}
+          <div className="flex flex-col gap-2.5 px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground">Layer order</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => onMoveToBack(selectedField.id)}
+                title="Send to back (render behind all fields)"
+              >
+                <ArrowDownToLine className="size-3.5" />
+                Send to back
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => onMoveToFront(selectedField.id)}
+                title="Bring to front (render above all fields)"
+              >
+                <ArrowUpToLine className="size-3.5" />
+                Bring to front
+              </Button>
+            </div>
           </div>
         </ScrollArea>
       )}
