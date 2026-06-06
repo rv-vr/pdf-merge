@@ -80,10 +80,7 @@ export default function App() {
               placedFields={fields.placedFields}
               selectedFieldId={fields.selectedFieldId}
               onAddField={fields.addFieldToPage}
-              onRemoveField={(id) => {
-                fields.setPlacedFields((prev) => prev.filter((f) => f.id !== id));
-                if (fields.selectedFieldId === id) fields.setSelectedFieldId(null);
-              }}
+              onRemoveField={fields.removeField}
               onSelectField={fields.setSelectedFieldId}
             />
 
@@ -99,6 +96,8 @@ export default function App() {
               previewRowIndex={fields.previewRowIndex}
               csvRows={csv.csvRows}
               zoom={pdf.zoom}
+              canUndo={fields.canUndo}
+              canRedo={fields.canRedo}
               onPageChange={pdf.setCurrentPage}
               onZoomChange={pdf.setZoom}
               onTogglePreview={() => {
@@ -107,10 +106,9 @@ export default function App() {
               }}
               onPreviewRowChange={fields.setPreviewRowIndex}
               onSelectField={fields.setSelectedFieldId}
-              onClearAllFields={() => {
-                fields.setPlacedFields([]);
-                fields.setSelectedFieldId(null);
-              }}
+              onClearAllFields={fields.clearAllFields}
+              onUndo={fields.undo}
+              onRedo={fields.redo}
               onFieldMouseDown={fields.handleMouseDown}
               onFieldTouchStart={fields.handleTouchStart}
               onResizeMouseDown={fields.handleResizeMouseDown}
@@ -123,10 +121,7 @@ export default function App() {
               selectedField={selectedField}
               onUpdate={fields.updateSelectedField}
               onDuplicate={fields.handleDuplicateField}
-              onDelete={(id) => {
-                fields.setPlacedFields((prev) => prev.filter((f) => f.id !== id));
-                fields.setSelectedFieldId(null);
-              }}
+              onDelete={fields.removeField}
             />
           </div>
         )}
