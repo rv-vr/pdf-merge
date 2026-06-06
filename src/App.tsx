@@ -120,8 +120,12 @@ export default function App() {
             <Inspector
               selectedField={selectedField}
               onUpdate={fields.updateSelectedField}
+              onCommit={fields.commitSelectedField}
+              onUpdateCommit={fields.updateAndCommitField}
               onDuplicate={fields.handleDuplicateField}
               onDelete={fields.removeField}
+              onMoveToFront={fields.moveFieldToFront}
+              onMoveToBack={fields.moveFieldToBack}
             />
           </div>
         )}
