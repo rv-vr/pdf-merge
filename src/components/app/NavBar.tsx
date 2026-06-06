@@ -91,15 +91,11 @@ export function NavBar({
           {isDarkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </Button>
 
-        {canExport && (
-          <>
-            <Separator orientation="vertical" className="h-5" />
-            <Button onClick={onExportClick} size="sm" className="gap-1.5">
-              <Download className="size-3.5" />
-              Export
-            </Button>
-          </>
-        )}
+        <Separator orientation="vertical" className="h-5" />
+        <Button onClick={onExportClick} size="sm" className="gap-1.5" disabled={!canExport}>
+          <Download className="size-3.5" />
+          Export
+        </Button>
       </div>
 
       {/* Info / How-to Dialog */}
