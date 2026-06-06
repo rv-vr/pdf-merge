@@ -22,18 +22,6 @@ import {
 } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { PlacedField } from '@/types';
-import { cn } from '@/lib/utils';
-
-const COLOR_SWATCHES = [
-  '#000000',
-  '#ffffff',
-  '#1a1a2e',
-  '#52525b',
-  '#4f46e5',
-  '#059669',
-  '#dc2626',
-  '#d97706',
-];
 
 interface InspectorProps {
   selectedField: PlacedField | undefined;
@@ -175,10 +163,10 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                   variant="outline"
                   size="sm"
                 >
-                  <ToggleGroupItem value="bold" className="w-9 font-bold">
+                  <ToggleGroupItem value="bold" className="w-9 font-bold" title="Bold (Ctrl+B)">
                     B
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="italic" className="w-9 italic">
+                  <ToggleGroupItem value="italic" className="w-9 italic" title="Italic (Ctrl+I)">
                     I
                   </ToggleGroupItem>
                 </ToggleGroup>
@@ -194,13 +182,13 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                   variant="outline"
                   size="sm"
                 >
-                  <ToggleGroupItem value="left" className="w-9">
+                  <ToggleGroupItem value="left" className="w-9" title="Align left">
                     <AlignLeft className="size-3.5" />
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="center" className="w-9">
+                  <ToggleGroupItem value="center" className="w-9" title="Align center">
                     <AlignCenter className="size-3.5" />
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="right" className="w-9">
+                  <ToggleGroupItem value="right" className="w-9" title="Align right">
                     <AlignRight className="size-3.5" />
                   </ToggleGroupItem>
                 </ToggleGroup>
@@ -216,33 +204,13 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
               Color
             </p>
 
-            {/* Preset swatches */}
-            <div className="flex flex-wrap gap-2">
-              {COLOR_SWATCHES.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => onUpdate({ color })}
-                  aria-label={color}
-                  title={color}
-                  style={{ backgroundColor: color }}
-                  className={cn(
-                    'size-7 rounded border border-border shadow-sm transition-transform hover:scale-105 active:scale-95',
-                    color.toLowerCase() === '#ffffff' && 'border-border',
-                    selectedField.color.toLowerCase() === color.toLowerCase() &&
-                      'scale-110 ring-2 ring-ring ring-offset-2'
-                  )}
-                />
-              ))}
-            </div>
-
-            {/* Hex + color picker */}
+            {/* Color wheel + hex input */}
             <div className="flex items-center gap-2">
               <label
-                className="relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-border"
+                className="relative size-11 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-border shadow-sm transition-shadow hover:ring-2 hover:ring-ring hover:ring-offset-1"
                 style={{ backgroundColor: selectedField.color }}
-                title="Pick custom color"
-                aria-label="Pick custom color"
+                title="Pick color"
+                aria-label="Pick color"
               >
                 <input
                   type="color"
@@ -327,7 +295,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
 
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Info className="size-3 shrink-0" />
-              Use arrow keys to nudge. Hold Shift for larger steps.
+              Arrow keys nudge. Shift for larger steps. Ctrl+B/I toggle style.
             </p>
           </div>
         </ScrollArea>
