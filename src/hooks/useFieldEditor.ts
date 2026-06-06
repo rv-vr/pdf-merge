@@ -155,6 +155,36 @@ export function useFieldEditor(currentPage: number) {
         }
       }
 
+      // Layer reorder — ] / [ step one, Ctrl+] / Ctrl+[ jump to front/back
+      if (e.key === ']' || e.key === '[') {
+        e.preventDefault();
+        snapshot();
+        if (ctrl) {
+          setPlacedFields((prev) => {
+            const field = prev.find((f) => f.id === id);
+            if (!field) return prev;
+            return e.key === ']'
+              ? [...prev.filter((f) => f.id !== id), field]
+              : [field, ...prev.filter((f) => f.id !== id)];
+          });
+        } else {
+          setPlacedFields((prev) => {
+            const idx = prev.findIndex((f) => f.id === id);
+            if (idx < 0) return prev;
+            const next = [...prev];
+            if (e.key === ']') {
+              if (idx === prev.length - 1) return prev;
+              [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+            } else {
+              if (idx === 0) return prev;
+              [next[idx], next[idx - 1]] = [next[idx - 1], next[idx]];
+            }
+            return next;
+          });
+        }
+        return;
+      }
+
       // Arrow-key nudge (no ctrl)
       if (!ctrl) {
         const step = e.shiftKey ? 2.0 : 0.5;

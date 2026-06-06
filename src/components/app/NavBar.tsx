@@ -49,6 +49,15 @@ const SHORTCUT_GROUPS = [
     ],
   },
   {
+    label: 'Layer order',
+    shortcuts: [
+      { keys: [']'], description: 'Move forward one layer' },
+      { keys: ['['], description: 'Move backward one layer' },
+      { keys: ['Ctrl', ']'], description: 'Bring to front' },
+      { keys: ['Ctrl', '['], description: 'Send to back' },
+    ],
+  },
+  {
     label: 'Field management',
     shortcuts: [
       { keys: ['Delete'], description: 'Delete selected field' },
