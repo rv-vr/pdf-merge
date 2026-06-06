@@ -43,8 +43,8 @@ function translateCoordinates(
   // Convert percentage directly to pdf points (top-left x)
   const x = (xPercent / 100) * pdfWidth;
   // Canvas y starts at 0 at the top, PDF y starts at 0 at the bottom.
-  // The baseline of the text inside the box starts at roughly 85% of font size below the top of the box.
-  const y = pdfHeight - (yPercent / 100) * pdfHeight - fontSize * 0.85;
+  // The baseline of the text inside the box starts at roughly 95% of font size below the top of the box.
+  const y = pdfHeight - (yPercent / 100) * pdfHeight - fontSize * 0.95;
   return { x, y };
 }
 

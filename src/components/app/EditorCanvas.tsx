@@ -1,16 +1,17 @@
 import React from 'react';
 import type { RefObject } from 'react';
-import type * as pdfjsLib from 'pdfjs-dist';
-import { Move, FileText, FileUp } from 'lucide-react';
+import { Document, Page } from 'react-pdf';
+import { FileText, FileUp, GripVerticalIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PlacedField } from '@/types';
 import { cn } from '@/lib/utils';
 import { CanvasToolbar } from '@/components/app/CanvasToolbar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function fontFamilyFor(font: PlacedField['font']): string {
-  if (font === 'Courier') return 'monospace';
-  if (font === 'Times-Roman') return 'serif';
-  return 'sans-serif';
+  if (font === 'Courier') return '"Courier New", Courier, monospace';
+  if (font === 'Times-Roman') return '"Times New Roman", Times, Georgia, serif';
+  return 'Helvetica, "Helvetica Neue", Arial, sans-serif';
 }
 
 function getFieldStyle(
@@ -48,9 +49,60 @@ function getFieldStyle(
   };
 }
 
+function PdfPageSkeleton({ width, height }: { width: number; height: number }) {
+  const w = width || 600;
+  const h = height || Math.round(w * 1.414);
+  return (
+    <div style={{ width: w, height: h }} className="flex flex-col gap-3 bg-white p-8">
+      <Skeleton className="h-5 w-2/3 bg-zinc-100" />
+      <Skeleton className="h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-4/5 bg-zinc-100" />
+      <Skeleton className="mt-2 h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-3/4 bg-zinc-100" />
+      <Skeleton className="mt-2 h-24 w-full bg-zinc-100" />
+      <Skeleton className="mt-2 h-3 w-full bg-zinc-100" />
+      <Skeleton className="h-3 w-5/6 bg-zinc-100" />
+    </div>
+  );
+}
+
+interface PdfPageWithFadeProps {
+  pageNumber: number;
+  scale: number;
+  pdfDimensions: { width: number; height: number };
+  onLoadSuccess: (page: { width: number; height: number }) => void;
+}
+
+function PdfPageWithFade({ pageNumber, scale, pdfDimensions, onLoadSuccess }: PdfPageWithFadeProps) {
+  const [rendered, setRendered] = React.useState(false);
+  return (
+    <div className="relative">
+      <Page
+        pageNumber={pageNumber}
+        scale={scale}
+        renderTextLayer={false}
+        renderAnnotationLayer={false}
+        onLoadSuccess={onLoadSuccess}
+        onRenderSuccess={() => setRendered(true)}
+        loading={<PdfPageSkeleton width={pdfDimensions.width} height={pdfDimensions.height} />}
+      />
+      {/* Skeleton cover fades out once canvas is painted */}
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 transition-opacity duration-500',
+          rendered ? 'opacity-0' : 'opacity-100'
+        )}
+      >
+        <PdfPageSkeleton width={pdfDimensions.width} height={pdfDimensions.height} />
+      </div>
+    </div>
+  );
+}
+
 interface EditorCanvasProps {
   pdfBytes: ArrayBuffer | null;
-  pdfDoc: pdfjsLib.PDFDocumentProxy | null;
   totalPages: number;
   currentPage: number;
   pdfDimensions: { width: number; height: number };
@@ -74,8 +126,9 @@ interface EditorCanvasProps {
   onFieldTouchStart: (e: React.TouchEvent, field: PlacedField) => void;
   onResizeMouseDown: (e: React.MouseEvent, field: PlacedField) => void;
   onResizeTouchStart: (e: React.TouchEvent, field: PlacedField) => void;
-  canvasRef: RefObject<HTMLCanvasElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
+  onLoadSuccess: (totalPages: number) => void;
+  onPageRenderSuccess: (width: number, height: number) => void;
 }
 
 export function EditorCanvas({
@@ -103,9 +156,15 @@ export function EditorCanvas({
   onFieldTouchStart,
   onResizeMouseDown,
   onResizeTouchStart,
-  canvasRef,
   containerRef,
+  onLoadSuccess,
+  onPageRenderSuccess,
 }: EditorCanvasProps) {
+  const memoizedFile = React.useMemo(() => {
+    return pdfBytes ? pdfBytes.slice(0) : null;
+  }, [pdfBytes]);
+
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <CanvasToolbar
@@ -138,12 +197,24 @@ export function EditorCanvas({
             ref={containerRef}
             className="relative inline-block select-none rounded-sm border border-border bg-white shadow-2xl dark:bg-slate-900"
             style={{
-              width: pdfDimensions.width ? `${pdfDimensions.width / 1.5}px` : 'auto',
+              width: pdfDimensions.width ? `${pdfDimensions.width}px` : 'auto',
             }}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            {/* Rendered PDF canvas */}
-            <canvas ref={canvasRef} className="block h-auto w-full" />
+            {/* Rendered PDF canvas using react-pdf */}
+            <Document
+              file={memoizedFile}
+              onLoadSuccess={({ numPages }) => onLoadSuccess(numPages)}
+              loading={<PdfPageSkeleton width={pdfDimensions.width} height={pdfDimensions.height} />}
+            >
+              <PdfPageWithFade
+                key={currentPage}
+                pageNumber={currentPage}
+                scale={zoom}
+                pdfDimensions={pdfDimensions}
+                onLoadSuccess={(page) => onPageRenderSuccess(page.width, page.height)}
+              />
+            </Document>
 
             {/* Grid overlay in edit mode */}
             {!isPreviewMode && (
@@ -158,7 +229,7 @@ export function EditorCanvas({
             )}
 
             {/* Field overlay layer */}
-            <div className="absolute inset-0 z-10 overflow-hidden">
+            <div className="absolute inset-0 z-10 overflow-visible">
               {placedFields.flatMap((field) => {
                 if (field.page !== currentPage) return [];
                 const isSelected = field.id === selectedFieldId;
@@ -179,27 +250,27 @@ export function EditorCanvas({
                     onMouseDown={(e) => onFieldMouseDown(e, field)}
                     onTouchStart={(e) => onFieldTouchStart(e, field)}
                     className={cn(
-                      'absolute z-20 flex items-center overflow-hidden whitespace-nowrap select-none rounded transition-shadow',
+                      'absolute z-20 flex items-center overflow-visible whitespace-nowrap select-none rounded transition-colors',
                       isPreviewMode
                         ? 'pointer-events-none cursor-default bg-transparent'
                         : cn(
                             'cursor-grab active:cursor-grabbing',
-                            'bg-zinc-900/85 text-white dark:bg-zinc-100 dark:text-zinc-900',
-                            'pl-1 pr-3 shadow-sm',
+                            'bg-white/90 border pl-2 pr-8 shadow-sm',
                             isSelected
-                              ? 'ring-2 ring-primary ring-offset-1 ring-offset-white/50 dark:ring-offset-zinc-900/50'
-                              : 'hover:bg-zinc-950/90 dark:hover:bg-white/95'
+                              ? 'border-primary shadow-primary/20'
+                              : 'border-zinc-300 hover:border-primary/60'
                           )
                     )}
                   >
+                    {/* Label chip — floating above field box
                     {!isPreviewMode && (
-                      <Move
-                        className="mr-0.5 shrink-0 opacity-50"
-                        style={{ width: '0.85em', height: '0.85em' }}
-                      />
-                    )}
+                      <div className="pointer-events-none absolute -top-5 left-0 flex items-center gap-0.5 rounded-sm bg-zinc-900 px-1.5 py-0.75 text-[9px] font-medium leading-none text-white select-none dark:bg-zinc-100 dark:text-zinc-900">
+                        <Tag style={{ width: '0.65em', height: '0.65em' }} />
+                        <span>{field.fieldName}</span>
+                      </div>
+                    )} */}
 
-                    {/* Text content with alignment; in edit mode use the field's own color */}
+                    {/* Text content */}
                     <div
                       className={cn(
                         'flex-1 overflow-hidden',
@@ -213,13 +284,13 @@ export function EditorCanvas({
                     >
                       <span className="truncate leading-none">
                         {displayVal || (
-                          <span className="italic opacity-40">empty</span>
+                          <span className="italic opacity-30">empty</span>
                         )}
                       </span>
                     </div>
 
                     {/* Resize grip */}
-                    {isSelected && !isPreviewMode && (
+                    {!isPreviewMode && (
                       <button
                         type="button"
                         tabIndex={0}
@@ -231,11 +302,16 @@ export function EditorCanvas({
                           e.stopPropagation();
                           onResizeTouchStart(e, field);
                         }}
-                        className="absolute bottom-0 right-0 top-0 flex w-2.5 cursor-ew-resize items-center justify-center rounded-r bg-white/20 text-[7px] font-bold text-white/70 select-none hover:bg-white/40 active:bg-white/60 dark:bg-zinc-900/20 dark:text-zinc-900/70 dark:hover:bg-zinc-900/40"
+                        className={cn(
+                          'absolute bottom-0 right-0 top-0 flex w-5 cursor-ew-resize items-center justify-center rounded-r select-none transition-colors',
+                          isSelected
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80'
+                            : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300 active:bg-zinc-400'
+                        )}
                         aria-label="Drag to resize field width"
                         title="Drag to resize field width"
                       >
-                        ⋮
+                        <GripVerticalIcon className="size-3" />
                       </button>
                     )}
                   </div>

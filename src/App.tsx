@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
+import { pdfjs } from 'react-pdf';
 import { NavBar } from '@/components/app/NavBar';
 import { UploadScreen } from '@/components/app/UploadScreen';
 import { FieldsSidebar } from '@/components/app/FieldsSidebar';
@@ -12,8 +12,7 @@ import { useCsv } from '@/hooks/useCsv';
 import { useFieldEditor } from '@/hooks/useFieldEditor';
 import { useExport } from '@/hooks/useExport';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://unpkg.com/pdfjs-dist@6.0.227/build/pdf.worker.min.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 const THEME_STORAGE_KEY = 'pdf-merger-theme';
 
@@ -87,7 +86,6 @@ export default function App() {
 
             <EditorCanvas
               pdfBytes={pdf.pdfBytes}
-              pdfDoc={pdf.pdfDoc}
               totalPages={pdf.totalPages}
               currentPage={pdf.currentPage}
               pdfDimensions={pdf.pdfDimensions}
@@ -114,8 +112,9 @@ export default function App() {
               onFieldTouchStart={fields.handleTouchStart}
               onResizeMouseDown={fields.handleResizeMouseDown}
               onResizeTouchStart={fields.handleResizeTouchStart}
-              canvasRef={pdf.canvasRef}
               containerRef={fields.containerRef}
+              onLoadSuccess={pdf.setTotalPages}
+              onPageRenderSuccess={(width, height) => pdf.setPdfDimensions({ width, height })}
             />
 
             <Inspector
