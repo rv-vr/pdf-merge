@@ -12,8 +12,7 @@ import { useCsv } from '@/hooks/useCsv';
 import { useFieldEditor } from '@/hooks/useFieldEditor';
 import { useExport } from '@/hooks/useExport';
 
-pdfjs.GlobalWorkerOptions.workerSrc =
-  `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 const THEME_STORAGE_KEY = 'pdf-merger-theme';
 
