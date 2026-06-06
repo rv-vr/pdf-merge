@@ -58,6 +58,7 @@ export function Inspector({
     if (selectedField && colorInputRef.current) {
       colorInputRef.current.value = selectedField.color;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedField?.color]);
 
   // 'input' fires on every drag frame — live preview, no snapshot.
@@ -153,7 +154,7 @@ export function Inspector({
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position='popper'>
                   <SelectItem value="Helvetica">Helvetica (Sans-serif)</SelectItem>
                   <SelectItem value="Times-Roman">Times New Roman (Serif)</SelectItem>
                   <SelectItem value="Courier">Courier (Monospace)</SelectItem>
@@ -185,7 +186,7 @@ export function Inspector({
                       if (!isNaN(val)) onUpdate({ fontSize: Math.max(1, Math.min(144, val)) });
                     }}
                     onBlur={() => onCommit()}
-                    className="w-full pr-6 text-center text-sm"
+                    className="w-full pr-3 text-center text-sm"
                   />
                   <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                     pt
@@ -218,7 +219,7 @@ export function Inspector({
                   <ToggleGroupItem value="bold" className="w-9 font-bold" title="Bold (Ctrl+B)">
                     B
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="italic" className="w-9 italic" title="Italic (Ctrl+I)">
+                  <ToggleGroupItem value="italic" className="w-9 font-mono italic font-bold" title="Italic (Ctrl+I)">
                     I
                   </ToggleGroupItem>
                 </ToggleGroup>

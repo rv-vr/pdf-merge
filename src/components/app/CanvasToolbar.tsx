@@ -68,7 +68,7 @@ export function CanvasToolbar({
 
       {isPreviewMode && csvRows.length > 0 && (
         <div className="flex animate-in fade-in items-center gap-1.5">
-          <Separator orientation="vertical" className="h-5" />
+          <Separator orientation="vertical" />
           <span className="shrink-0 text-xs font-medium text-muted-foreground">Row</span>
           <Button
             variant="outline"
@@ -113,7 +113,7 @@ export function CanvasToolbar({
         </div>
       )}
 
-      <Separator orientation="vertical" className="h-5" />
+      <Separator orientation="vertical"  />
 
       {/* Undo / Redo */}
       <div className="flex items-center gap-0.5">
@@ -166,7 +166,7 @@ export function CanvasToolbar({
               <ChevronRight className="size-3.5" />
             </Button>
           </div>
-          <Separator orientation="vertical" className="h-5" />
+          <Separator orientation="vertical"  />
         </>
       )}
 
@@ -186,7 +186,7 @@ export function CanvasToolbar({
         </Button>
       )}
 
-      <Separator orientation="vertical" className="h-5" />
+      <Separator orientation="vertical"  />
 
       <div className="flex items-center gap-1">
         <Button
