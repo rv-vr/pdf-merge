@@ -64,7 +64,7 @@ export function useExport(
     dispatch({ type: 'start', message: 'Generating unified PDF file…', total: csvRows.length });
     try {
       const result = await generateCombinedPDF(
-        pdfBytes,
+        pdfBytes.slice(0),
         csvRows,
         placedFields,
         (current, total) => dispatch({ type: 'progress', current, total }),
@@ -89,7 +89,7 @@ export function useExport(
     dispatch({ type: 'start', message: 'Packing separate PDFs into ZIP Archive…', total: csvRows.length });
     try {
       const zipBlob = await generateZIP(
-        pdfBytes,
+        pdfBytes.slice(0),
         csvRows,
         placedFields,
         filenameColumn,
