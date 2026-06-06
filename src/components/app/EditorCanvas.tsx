@@ -193,20 +193,13 @@ export function EditorCanvas({
                     )}
                   >
                     {!isPreviewMode && (
-                      <>
-                        {/* Color dot hint */}
-                        <span
-                          className="mr-1 size-2 shrink-0 rounded-full opacity-80"
-                          style={{ backgroundColor: field.color }}
-                        />
-                        <Move
-                          className="mr-0.5 shrink-0 opacity-50"
-                          style={{ width: '0.85em', height: '0.85em' }}
-                        />
-                      </>
+                      <Move
+                        className="mr-0.5 shrink-0 opacity-50"
+                        style={{ width: '0.85em', height: '0.85em' }}
+                      />
                     )}
 
-                    {/* Text content with alignment */}
+                    {/* Text content with alignment; in edit mode use the field's own color */}
                     <div
                       className={cn(
                         'flex-1 overflow-hidden',
@@ -216,6 +209,7 @@ export function EditorCanvas({
                           'text-left'
                         )
                       )}
+                      style={!isPreviewMode ? { color: field.color } : undefined}
                     >
                       <span className="truncate leading-none">
                         {displayVal || (
