@@ -1,5 +1,5 @@
 import { useReducer } from 'react';
-import type { PlacedField, BaseField } from '@/types';
+import type { PlacedField } from '@/types';
 import { generateCombinedPDF, generateZIP } from '@/lib/pdfMerger';
 
 type ExportState = {
@@ -66,7 +66,7 @@ export function useExport(
       const result = await generateCombinedPDF(
         pdfBytes,
         csvRows,
-        placedFields as BaseField[],
+        placedFields,
         (current, total) => dispatch({ type: 'progress', current, total }),
       );
       const blob = new Blob([result.buffer as ArrayBuffer], { type: 'application/pdf' });
@@ -91,7 +91,7 @@ export function useExport(
       const zipBlob = await generateZIP(
         pdfBytes,
         csvRows,
-        placedFields as BaseField[],
+        placedFields,
         filenameColumn,
         (current, total) => dispatch({ type: 'progress', current, total }),
       );
