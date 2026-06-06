@@ -1,6 +1,6 @@
 import React from 'react';
 import type { RefObject } from 'react';
-import type * as pdfjsLib from 'pdfjs-dist';
+import { Document, Page } from 'react-pdf';
 import { Move, FileText, FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PlacedField } from '@/types';
@@ -50,7 +50,6 @@ function getFieldStyle(
 
 interface EditorCanvasProps {
   pdfBytes: ArrayBuffer | null;
-  pdfDoc: pdfjsLib.PDFDocumentProxy | null;
   totalPages: number;
   currentPage: number;
   pdfDimensions: { width: number; height: number };
@@ -74,8 +73,9 @@ interface EditorCanvasProps {
   onFieldTouchStart: (e: React.TouchEvent, field: PlacedField) => void;
   onResizeMouseDown: (e: React.MouseEvent, field: PlacedField) => void;
   onResizeTouchStart: (e: React.TouchEvent, field: PlacedField) => void;
-  canvasRef: RefObject<HTMLCanvasElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
+  onLoadSuccess: (totalPages: number) => void;
+  onPageRenderSuccess: (width: number, height: number) => void;
 }
 
 export function EditorCanvas({
@@ -103,9 +103,14 @@ export function EditorCanvas({
   onFieldTouchStart,
   onResizeMouseDown,
   onResizeTouchStart,
-  canvasRef,
   containerRef,
+  onLoadSuccess,
+  onPageRenderSuccess,
 }: EditorCanvasProps) {
+  const memoizedFile = React.useMemo(() => {
+    return pdfBytes ? pdfBytes.slice(0) : null;
+  }, [pdfBytes]);
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <CanvasToolbar
@@ -138,12 +143,25 @@ export function EditorCanvas({
             ref={containerRef}
             className="relative inline-block select-none rounded-sm border border-border bg-white shadow-2xl dark:bg-slate-900"
             style={{
-              width: pdfDimensions.width ? `${pdfDimensions.width / 1.5}px` : 'auto',
+              width: pdfDimensions.width ? `${pdfDimensions.width}px` : 'auto',
             }}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            {/* Rendered PDF canvas */}
-            <canvas ref={canvasRef} className="block h-auto w-full" />
+            {/* Rendered PDF canvas using react-pdf */}
+            <Document
+              file={memoizedFile}
+              onLoadSuccess={({ numPages }) => onLoadSuccess(numPages)}
+              loading={<div className="flex h-40 w-60 items-center justify-center text-xs text-muted-foreground">Loading PDF...</div>}
+            >
+              <Page
+                pageNumber={currentPage}
+                scale={zoom}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+                onLoadSuccess={(page) => onPageRenderSuccess(page.width, page.height)}
+                loading={<div className="flex h-40 w-60 items-center justify-center text-xs text-muted-foreground">Rendering page...</div>}
+              />
+            </Document>
 
             {/* Grid overlay in edit mode */}
             {!isPreviewMode && (
