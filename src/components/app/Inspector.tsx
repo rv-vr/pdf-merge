@@ -1,3 +1,4 @@
+import { useRef, useEffect, useLayoutEffect } from 'react';
 import {
   Tag,
   Copy,
@@ -6,6 +7,8 @@ import {
   AlignCenter,
   AlignRight,
   Info,
+  ArrowUpToLine,
+  ArrowDownToLine,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,12 +28,59 @@ import type { PlacedField } from '@/types';
 
 interface InspectorProps {
   selectedField: PlacedField | undefined;
+  /** Immediate update — no undo snapshot. Use for continuous inputs. */
   onUpdate: (updates: Partial<PlacedField>) => void;
+  /** Commit snapshot — call at end of continuous interaction (blur, slider release, color picker close). */
+  onCommit: () => void;
+  /** Snapshot + update in one — for discrete one-shot changes. */
+  onUpdateCommit: (updates: Partial<PlacedField>) => void;
   onDuplicate: (field: PlacedField) => void;
   onDelete: (id: string) => void;
+  onMoveToFront: (id: string) => void;
+  onMoveToBack: (id: string) => void;
 }
 
-export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: InspectorProps) {
+export function Inspector({
+  selectedField,
+  onUpdate,
+  onCommit,
+  onUpdateCommit,
+  onDuplicate,
+  onDelete,
+  onMoveToFront,
+  onMoveToBack,
+}: InspectorProps) {
+  const colorInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync DOM value imperatively when the field's color changes externally (undo/redo, field switch).
+  // The input is uncontrolled so React won't fight the native picker's in-flight value.
+  useLayoutEffect(() => {
+    if (selectedField && colorInputRef.current) {
+      colorInputRef.current.value = selectedField.color;
+    }
+  }, [selectedField?.color]);
+
+  // 'input' fires on every drag frame — live preview, no snapshot.
+  // 'change' fires on picker close — snapshot only (final value already applied by last 'input').
+  // Uncontrolled input means React never resets .value mid-session, so e.target.value is reliable.
+  useEffect(() => {
+    const el = colorInputRef.current;
+    if (!el) return;
+    const handleInput = (e: Event) => {
+      onUpdate({ color: (e.target as HTMLInputElement).value });
+    };
+    const handleChange = (e: Event) => {
+      onUpdate({ color: (e.target as HTMLInputElement).value });
+      onCommit();
+    };
+    el.addEventListener('input', handleInput);
+    el.addEventListener('change', handleChange);
+    return () => {
+      el.removeEventListener('input', handleInput);
+      el.removeEventListener('change', handleChange);
+    };
+  }, [onUpdate, onCommit, selectedField?.id]);
+
   return (
     <div className="flex h-full w-75 shrink-0 flex-col overflow-hidden border-l border-border bg-card">
       {/* Header */}
@@ -56,11 +106,11 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
       ) : (
         <ScrollArea className="flex-1">
           {/* Field header */}
-          <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Tag className="size-4" />
+          <div className="flex items-center gap-1 border-b border-border px-3 py-2">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Tag className="size-3.5" />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 px-1">
               <p className="truncate text-sm font-semibold leading-tight">
                 {selectedField.fieldName}
               </p>
@@ -68,7 +118,25 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 shrink-0 text-muted-foreground hover:text-foreground"
+              className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={() => onMoveToBack(selectedField.id)}
+              title="Send to back (render behind all fields)"
+            >
+              <ArrowDownToLine className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={() => onMoveToFront(selectedField.id)}
+              title="Bring to front (render above all fields)"
+            >
+              <ArrowUpToLine className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
               onClick={() => onDuplicate(selectedField)}
               title="Duplicate field"
             >
@@ -77,7 +145,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
+              className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
               onClick={() => onDelete(selectedField.id)}
               title="Delete field"
             >
@@ -97,7 +165,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
               <Select
                 value={selectedField.font}
                 onValueChange={(val: 'Helvetica' | 'Times-Roman' | 'Courier') =>
-                  onUpdate({ font: val })
+                  onUpdateCommit({ font: val })
                 }
               >
                 <SelectTrigger className="w-full">
@@ -121,6 +189,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                   step={1}
                   value={[selectedField.fontSize]}
                   onValueChange={([val]) => onUpdate({ fontSize: val })}
+                  onValueCommit={() => onCommit()}
                   className="flex-1"
                 />
                 <div className="relative w-16 shrink-0">
@@ -133,6 +202,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                       const val = parseInt(e.target.value, 10);
                       if (!isNaN(val)) onUpdate({ fontSize: Math.max(1, Math.min(144, val)) });
                     }}
+                    onBlur={() => onCommit()}
                     className="w-full pr-6 text-center text-sm"
                   />
                   <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -155,7 +225,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                     ...(selectedField.isItalic ? ['italic'] : []),
                   ]}
                   onValueChange={(values) =>
-                    onUpdate({
+                    onUpdateCommit({
                       isBold: values.includes('bold'),
                       isItalic: values.includes('italic'),
                     })
@@ -177,18 +247,18 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                   spacing={0}
                   value={selectedField.align ?? 'left'}
                   onValueChange={(val) => {
-                    if (val) onUpdate({ align: val as 'left' | 'center' | 'right' });
+                    if (val) onUpdateCommit({ align: val as 'left' | 'center' | 'right' });
                   }}
                   variant="outline"
                   size="sm"
                 >
-                  <ToggleGroupItem value="left" className="w-9" title="Align left">
+                  <ToggleGroupItem value="left" className="w-9" title="Align left (Ctrl+Shift+L)">
                     <AlignLeft className="size-3.5" />
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="center" className="w-9" title="Align center">
+                  <ToggleGroupItem value="center" className="w-9" title="Align center (Ctrl+Shift+E)">
                     <AlignCenter className="size-3.5" />
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="right" className="w-9" title="Align right">
+                  <ToggleGroupItem value="right" className="w-9" title="Align right (Ctrl+Shift+R)">
                     <AlignRight className="size-3.5" />
                   </ToggleGroupItem>
                 </ToggleGroup>
@@ -213,9 +283,9 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                 aria-label="Pick color"
               >
                 <input
+                  ref={colorInputRef}
                   type="color"
-                  value={selectedField.color}
-                  onChange={(e) => onUpdate({ color: e.target.value })}
+                  defaultValue={selectedField.color}
                   className="absolute -inset-1 cursor-pointer opacity-0"
                 />
               </label>
@@ -228,6 +298,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                     const v = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
                     onUpdate({ color: '#' + v });
                   }}
+                  onBlur={() => onCommit()}
                   aria-label="Hex color value"
                   className="flex-1 bg-transparent font-mono text-sm uppercase outline-none placeholder:text-muted-foreground"
                   placeholder="000000"
@@ -258,6 +329,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                     const val = parseFloat(e.target.value);
                     if (!isNaN(val)) onUpdate({ x: Math.max(0, Math.min(100, val)) });
                   }}
+                  onBlur={() => onCommit()}
                   className="h-8 text-center text-xs"
                 />
               </div>
@@ -273,6 +345,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                     const val = parseFloat(e.target.value);
                     if (!isNaN(val)) onUpdate({ y: Math.max(0, Math.min(100, val)) });
                   }}
+                  onBlur={() => onCommit()}
                   className="h-8 text-center text-xs"
                 />
               </div>
@@ -288,6 +361,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
                     const val = parseFloat(e.target.value);
                     if (!isNaN(val)) onUpdate({ width: Math.max(1, Math.min(100, val)) });
                   }}
+                  onBlur={() => onCommit()}
                   className="h-8 text-center text-xs"
                 />
               </div>
@@ -295,7 +369,7 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
 
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Info className="size-3 shrink-0" />
-              Arrow keys nudge. Shift for larger steps. Ctrl+B/I toggle style.
+              Arrow keys nudge position. Hold Shift for larger steps.
             </p>
           </div>
         </ScrollArea>
