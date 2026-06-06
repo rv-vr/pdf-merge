@@ -82,6 +82,7 @@ export default function App() {
               onAddField={fields.addFieldToPage}
               onRemoveField={fields.removeField}
               onSelectField={fields.setSelectedFieldId}
+              onReorderFields={fields.reorderFields}
             />
 
             <EditorCanvas

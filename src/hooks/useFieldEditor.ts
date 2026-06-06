@@ -387,6 +387,16 @@ export function useFieldEditor(currentPage: number) {
     });
   };
 
+  // displayOrderIds: topmost-first (index 0 = renders on top).
+  // Reverses before storing so last in array = topmost (matches DOM/pdf-lib draw order).
+  const reorderFields = useCallback((displayOrderIds: string[]) => {
+    snapshot();
+    setPlacedFields((prev) => {
+      const map = new Map(prev.map((f) => [f.id, f]));
+      return [...displayOrderIds].reverse().map((id) => map.get(id)).filter(Boolean) as PlacedField[];
+    });
+  }, [snapshot]);
+
   const handleMouseDown = (e: React.MouseEvent, field: PlacedField) => {
     e.preventDefault();
     e.stopPropagation();
@@ -467,6 +477,7 @@ export function useFieldEditor(currentPage: number) {
     clearAllFields,
     moveFieldToFront,
     moveFieldToBack,
+    reorderFields,
     undo,
     redo,
     handleMouseDown,
