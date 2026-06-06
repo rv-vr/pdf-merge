@@ -1,7 +1,7 @@
 import React from 'react';
 import type { RefObject } from 'react';
 import { Document, Page } from 'react-pdf';
-import { Move, FileText, FileUp } from 'lucide-react';
+import { FileText, FileUp, GripVerticalIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PlacedField } from '@/types';
 import { cn } from '@/lib/utils';
@@ -176,7 +176,7 @@ export function EditorCanvas({
             )}
 
             {/* Field overlay layer */}
-            <div className="absolute inset-0 z-10 overflow-hidden">
+            <div className="absolute inset-0 z-10 overflow-visible">
               {placedFields.flatMap((field) => {
                 if (field.page !== currentPage) return [];
                 const isSelected = field.id === selectedFieldId;
@@ -197,27 +197,27 @@ export function EditorCanvas({
                     onMouseDown={(e) => onFieldMouseDown(e, field)}
                     onTouchStart={(e) => onFieldTouchStart(e, field)}
                     className={cn(
-                      'absolute z-20 flex items-center overflow-hidden whitespace-nowrap select-none rounded transition-shadow',
+                      'absolute z-20 flex items-center overflow-visible whitespace-nowrap select-none rounded transition-colors',
                       isPreviewMode
                         ? 'pointer-events-none cursor-default bg-transparent'
                         : cn(
                             'cursor-grab active:cursor-grabbing',
-                            'bg-zinc-900/85 text-white dark:bg-zinc-100 dark:text-zinc-900',
-                            'pl-1 pr-3 shadow-sm',
+                            'bg-white/90 border pl-2 pr-8 shadow-sm',
                             isSelected
-                              ? 'ring-2 ring-primary ring-offset-1 ring-offset-white/50 dark:ring-offset-zinc-900/50'
-                              : 'hover:bg-zinc-950/90 dark:hover:bg-white/95'
+                              ? 'border-primary shadow-primary/20'
+                              : 'border-zinc-300 hover:border-primary/60'
                           )
                     )}
                   >
+                    {/* Label chip — floating above field box
                     {!isPreviewMode && (
-                      <Move
-                        className="mr-0.5 shrink-0 opacity-50"
-                        style={{ width: '0.85em', height: '0.85em' }}
-                      />
-                    )}
+                      <div className="pointer-events-none absolute -top-5 left-0 flex items-center gap-0.5 rounded-sm bg-zinc-900 px-1.5 py-0.75 text-[9px] font-medium leading-none text-white select-none dark:bg-zinc-100 dark:text-zinc-900">
+                        <Tag style={{ width: '0.65em', height: '0.65em' }} />
+                        <span>{field.fieldName}</span>
+                      </div>
+                    )} */}
 
-                    {/* Text content with alignment; in edit mode use the field's own color */}
+                    {/* Text content */}
                     <div
                       className={cn(
                         'flex-1 overflow-hidden',
@@ -231,13 +231,13 @@ export function EditorCanvas({
                     >
                       <span className="truncate leading-none">
                         {displayVal || (
-                          <span className="italic opacity-40">empty</span>
+                          <span className="italic opacity-30">empty</span>
                         )}
                       </span>
                     </div>
 
                     {/* Resize grip */}
-                    {isSelected && !isPreviewMode && (
+                    {!isPreviewMode && (
                       <button
                         type="button"
                         tabIndex={0}
@@ -249,11 +249,16 @@ export function EditorCanvas({
                           e.stopPropagation();
                           onResizeTouchStart(e, field);
                         }}
-                        className="absolute bottom-0 right-0 top-0 flex w-2.5 cursor-ew-resize items-center justify-center rounded-r bg-white/20 text-[7px] font-bold text-white/70 select-none hover:bg-white/40 active:bg-white/60 dark:bg-zinc-900/20 dark:text-zinc-900/70 dark:hover:bg-zinc-900/40"
+                        className={cn(
+                          'absolute bottom-0 right-0 top-0 flex w-5 cursor-ew-resize items-center justify-center rounded-r select-none transition-colors',
+                          isSelected
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80'
+                            : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300 active:bg-zinc-400'
+                        )}
                         aria-label="Drag to resize field width"
                         title="Drag to resize field width"
                       >
-                        ⋮
+                        <GripVerticalIcon className="size-3" />
                       </button>
                     )}
                   </div>
