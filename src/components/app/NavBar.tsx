@@ -1,4 +1,4 @@
-import { FileText, Download, Info, Sun, Moon } from 'lucide-react';
+import { FileText, Download, Info, Sun, Moon, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -22,6 +22,49 @@ interface NavBarProps {
   onBackToUpload?: () => void;
 }
 
+const SHORTCUT_GROUPS = [
+  {
+    label: 'History',
+    shortcuts: [
+      { keys: ['Ctrl', 'Z'], description: 'Undo' },
+      { keys: ['Ctrl', 'Y'], description: 'Redo' },
+      { keys: ['Ctrl', 'Shift', 'Z'], description: 'Redo (alternative)' },
+    ],
+  },
+  {
+    label: 'Typography',
+    shortcuts: [
+      { keys: ['Ctrl', 'B'], description: 'Toggle bold' },
+      { keys: ['Ctrl', 'I'], description: 'Toggle italic' },
+      { keys: ['Ctrl', 'Shift', 'L'], description: 'Align left' },
+      { keys: ['Ctrl', 'Shift', 'E'], description: 'Align center' },
+      { keys: ['Ctrl', 'Shift', 'R'], description: 'Align right' },
+    ],
+  },
+  {
+    label: 'Field position',
+    shortcuts: [
+      { keys: ['↑ ↓ ← →'], description: 'Nudge field by 0.5%' },
+      { keys: ['Shift', '↑ ↓ ← →'], description: 'Nudge field by 2%' },
+    ],
+  },
+  {
+    label: 'Field management',
+    shortcuts: [
+      { keys: ['Delete'], description: 'Delete selected field' },
+      { keys: ['Backspace'], description: 'Delete selected field' },
+    ],
+  },
+];
+
+function Kbd({ children }: { children: string }) {
+  return (
+    <kbd className="inline-flex h-5 items-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+      {children}
+    </kbd>
+  );
+}
+
 export function NavBar({
   isDarkMode,
   onToggleDark,
@@ -33,6 +76,7 @@ export function NavBar({
   onBackToUpload,
 }: NavBarProps) {
   const [infoOpen, setInfoOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md">
@@ -79,6 +123,16 @@ export function NavBar({
           title="How to use"
         >
           <Info className="size-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShortcutsOpen(true)}
+          className="size-8 rounded-lg"
+          title="Keyboard shortcuts"
+        >
+          <Keyboard className="size-4" />
         </Button>
 
         <Button
@@ -162,6 +216,39 @@ export function NavBar({
               <strong>🔒 Absolute Privacy:</strong> PDF rendering, CSV parsing, and document
               assembly are done 100% in your browser. No files or values are sent to any server.
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Keyboard Shortcuts Dialog */}
+      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <DialogDescription>
+              Shortcuts work when a field is selected and no text input is focused.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-5 py-2">
+            {SHORTCUT_GROUPS.map((group) => (
+              <div key={group.label} className="flex flex-col gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.label}
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {group.shortcuts.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-foreground">{s.description}</span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {s.keys.map((k) => (
+                          <Kbd key={k}>{k}</Kbd>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
