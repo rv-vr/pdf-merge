@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { PlacedField } from '@/types';
 
 type FieldProps = {
@@ -30,10 +30,47 @@ export function useFieldEditor(currentPage: number) {
   const [previewRowIndex, setPreviewRowIndex] = useState(0);
   const [lastFieldProperties, setLastFieldProperties] = useState<FieldProps>(DEFAULT_FIELD_PROPS);
 
+  // Undo / Redo stacks (max 50 entries each)
+  const [undoStack, setUndoStack] = useState<PlacedField[][]>([]);
+  const [redoStack, setRedoStack] = useState<PlacedField[][]>([]);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragStartOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const resizeStartWidth = useRef<number>(0);
   const resizeStartPointerX = useRef<number>(0);
+
+  // placedFields ref for use inside event handlers without stale closure
+  const placedFieldsRef = useRef(placedFields);
+  useEffect(() => { placedFieldsRef.current = placedFields; }, [placedFields]);
+
+  const canUndo = undoStack.length > 0;
+  const canRedo = redoStack.length > 0;
+
+  const snapshot = useCallback(() => {
+    setUndoStack((prev) => [...prev.slice(-49), [...placedFieldsRef.current]]);
+    setRedoStack([]);
+  }, []);
+
+  const undo = useCallback(() => {
+    setUndoStack((prev) => {
+      if (!prev.length) return prev;
+      const restored = prev[prev.length - 1];
+      setRedoStack((r) => [...r, [...placedFieldsRef.current]]);
+      setPlacedFields(restored);
+      setSelectedFieldId(null);
+      return prev.slice(0, -1);
+    });
+  }, []);
+
+  const redo = useCallback(() => {
+    setRedoStack((prev) => {
+      if (!prev.length) return prev;
+      const restored = prev[prev.length - 1];
+      setUndoStack((u) => [...u, [...placedFieldsRef.current]]);
+      setPlacedFields(restored);
+      return prev.slice(0, -1);
+    });
+  }, []);
 
   useEffect(() => {
     if (!selectedFieldId) return;
@@ -53,46 +90,81 @@ export function useFieldEditor(currentPage: number) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!selectedFieldId) return;
       const activeEl = document.activeElement;
-      if (
+      const isInputFocused =
         activeEl &&
         (activeEl.tagName === 'INPUT' ||
           activeEl.tagName === 'SELECT' ||
-          activeEl.tagName === 'TEXTAREA')
-      ) return;
+          activeEl.tagName === 'TEXTAREA');
 
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      // Undo / Redo — global, no field selection required
+      if (ctrl && !isInputFocused) {
+        if (e.key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+          return;
+        }
+        if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+          return;
+        }
+      }
+
+      if (!selectedFieldId || isInputFocused) return;
+
+      // Bold / Italic shortcuts
+      if (ctrl && e.key === 'b') {
+        e.preventDefault();
+        snapshot();
+        setPlacedFields((prev) =>
+          prev.map((f) => (f.id === selectedFieldId ? { ...f, isBold: !f.isBold } : f))
+        );
+        return;
+      }
+      if (ctrl && e.key === 'i') {
+        e.preventDefault();
+        snapshot();
+        setPlacedFields((prev) =>
+          prev.map((f) => (f.id === selectedFieldId ? { ...f, isItalic: !f.isItalic } : f))
+        );
+        return;
+      }
+
+      // Arrow-key nudge
       const step = e.shiftKey ? 2.0 : 0.5;
-
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         setPlacedFields((prev) =>
-          prev.map((f) => f.id === selectedFieldId ? { ...f, x: Math.max(0, f.x - step) } : f)
+          prev.map((f) => (f.id === selectedFieldId ? { ...f, x: Math.max(0, f.x - step) } : f))
         );
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         setPlacedFields((prev) =>
-          prev.map((f) => f.id === selectedFieldId ? { ...f, x: Math.min(100, f.x + step) } : f)
+          prev.map((f) => (f.id === selectedFieldId ? { ...f, x: Math.min(100, f.x + step) } : f))
         );
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setPlacedFields((prev) =>
-          prev.map((f) => f.id === selectedFieldId ? { ...f, y: Math.max(0, f.y - step) } : f)
+          prev.map((f) => (f.id === selectedFieldId ? { ...f, y: Math.max(0, f.y - step) } : f))
         );
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         setPlacedFields((prev) =>
-          prev.map((f) => f.id === selectedFieldId ? { ...f, y: Math.min(100, f.y + step) } : f)
+          prev.map((f) => (f.id === selectedFieldId ? { ...f, y: Math.min(100, f.y + step) } : f))
         );
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
+        snapshot();
         setPlacedFields((prev) => prev.filter((f) => f.id !== selectedFieldId));
         setSelectedFieldId(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedFieldId]);
+  }, [selectedFieldId, snapshot, undo, redo]);
 
   useEffect(() => {
     if (!draggingFieldId) return;
@@ -106,12 +178,12 @@ export function useFieldEditor(currentPage: number) {
       xPercent = Math.max(0, Math.min(100, xPercent));
       yPercent = Math.max(0, Math.min(100, yPercent));
       setPlacedFields((prev) =>
-        prev.map((f) => f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f)
+        prev.map((f) => (f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f))
       );
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault(); // prevent page scroll during field drag
+      e.preventDefault();
       const container = containerRef.current;
       if (!container) return;
       const touch = e.touches[0];
@@ -122,7 +194,7 @@ export function useFieldEditor(currentPage: number) {
       xPercent = Math.max(0, Math.min(100, xPercent));
       yPercent = Math.max(0, Math.min(100, yPercent));
       setPlacedFields((prev) =>
-        prev.map((f) => f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f)
+        prev.map((f) => (f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f))
       );
     };
 
@@ -155,12 +227,12 @@ export function useFieldEditor(currentPage: number) {
       const minWidthPercent = activeField ? (activeField.fontSize / 612) * 100 : 5;
       newWidth = Math.max(minWidthPercent, Math.min(100 - (activeField?.x || 0), newWidth));
       setPlacedFields((prev) =>
-        prev.map((f) => f.id === resizingFieldId ? { ...f, width: newWidth } : f)
+        prev.map((f) => (f.id === resizingFieldId ? { ...f, width: newWidth } : f))
       );
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault(); // prevent page scroll during field resize
+      e.preventDefault();
       const container = containerRef.current;
       if (!container) return;
       const touch = e.touches[0];
@@ -172,7 +244,7 @@ export function useFieldEditor(currentPage: number) {
       const minWidthPercent = activeField ? (activeField.fontSize / 612) * 100 : 5;
       newWidth = Math.max(minWidthPercent, Math.min(100 - (activeField?.x || 0), newWidth));
       setPlacedFields((prev) =>
-        prev.map((f) => f.id === resizingFieldId ? { ...f, width: newWidth } : f)
+        prev.map((f) => (f.id === resizingFieldId ? { ...f, width: newWidth } : f))
       );
     };
 
@@ -193,6 +265,7 @@ export function useFieldEditor(currentPage: number) {
   }, [resizingFieldId, placedFields]);
 
   const addFieldToPage = (header: string) => {
+    snapshot();
     const newField: PlacedField = {
       id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       fieldName: header,
@@ -206,6 +279,7 @@ export function useFieldEditor(currentPage: number) {
   };
 
   const handleDuplicateField = (field: PlacedField) => {
+    snapshot();
     const newField: PlacedField = {
       ...field,
       id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -218,9 +292,22 @@ export function useFieldEditor(currentPage: number) {
 
   const updateSelectedField = (updates: Partial<PlacedField>) => {
     if (!selectedFieldId) return;
+    snapshot();
     setPlacedFields((prev) =>
-      prev.map((f) => f.id === selectedFieldId ? { ...f, ...updates } : f)
+      prev.map((f) => (f.id === selectedFieldId ? { ...f, ...updates } : f))
     );
+  };
+
+  const removeField = (id: string) => {
+    snapshot();
+    setPlacedFields((prev) => prev.filter((f) => f.id !== id));
+    if (selectedFieldId === id) setSelectedFieldId(null);
+  };
+
+  const clearAllFields = () => {
+    snapshot();
+    setPlacedFields([]);
+    setSelectedFieldId(null);
   };
 
   const handleMouseDown = (e: React.MouseEvent, field: PlacedField) => {
@@ -231,6 +318,7 @@ export function useFieldEditor(currentPage: number) {
       setSelectedFieldId(field.id);
       return;
     }
+    snapshot();
     const rect = e.currentTarget.getBoundingClientRect();
     dragStartOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     setDraggingFieldId(field.id);
@@ -243,6 +331,7 @@ export function useFieldEditor(currentPage: number) {
       setSelectedFieldId(field.id);
       return;
     }
+    snapshot();
     const rect = e.currentTarget.getBoundingClientRect();
     const touch = e.touches[0];
     if (touch) {
@@ -255,6 +344,7 @@ export function useFieldEditor(currentPage: number) {
     e.preventDefault();
     e.stopPropagation();
     if (isPreviewMode) return;
+    snapshot();
     setResizingFieldId(field.id);
     resizeStartWidth.current = field.width;
     resizeStartPointerX.current = e.clientX;
@@ -265,6 +355,7 @@ export function useFieldEditor(currentPage: number) {
     if (isPreviewMode) return;
     const touch = e.touches[0];
     if (touch) {
+      snapshot();
       setResizingFieldId(field.id);
       resizeStartWidth.current = field.width;
       resizeStartPointerX.current = touch.clientX;
@@ -274,6 +365,8 @@ export function useFieldEditor(currentPage: number) {
   const resetFields = () => {
     setPlacedFields([]);
     setSelectedFieldId(null);
+    setUndoStack([]);
+    setRedoStack([]);
   };
 
   return {
@@ -282,6 +375,8 @@ export function useFieldEditor(currentPage: number) {
     isPreviewMode,
     previewRowIndex,
     containerRef,
+    canUndo,
+    canRedo,
     setPlacedFields,
     setSelectedFieldId,
     setIsPreviewMode,
@@ -289,6 +384,10 @@ export function useFieldEditor(currentPage: number) {
     addFieldToPage,
     handleDuplicateField,
     updateSelectedField,
+    removeField,
+    clearAllFields,
+    undo,
+    redo,
     handleMouseDown,
     handleTouchStart,
     handleResizeMouseDown,

@@ -1,4 +1,4 @@
-import { Eye, EyeOff, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Trash2, Undo2, Redo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -21,11 +21,15 @@ interface CanvasToolbarProps {
   currentPage: number;
   zoom: number;
   placedFields: PlacedField[];
+  canUndo: boolean;
+  canRedo: boolean;
   onTogglePreview: () => void;
   onPreviewRowChange: (index: number) => void;
   onPageChange: (page: number) => void;
   onZoomChange: (zoom: number) => void;
   onClearAllFields: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
 export function CanvasToolbar({
@@ -36,11 +40,15 @@ export function CanvasToolbar({
   currentPage,
   zoom,
   placedFields,
+  canUndo,
+  canRedo,
   onTogglePreview,
   onPreviewRowChange,
   onPageChange,
   onZoomChange,
   onClearAllFields,
+  onUndo,
+  onRedo,
 }: CanvasToolbarProps) {
   const currentZoomIdx = ZOOM_STEPS.indexOf(zoom);
   const canZoomOut = currentZoomIdx > 0;
@@ -104,6 +112,32 @@ export function CanvasToolbar({
           </span>
         </div>
       )}
+
+      <Separator orientation="vertical" className="h-5" />
+
+      {/* Undo / Redo */}
+      <div className="flex items-center gap-0.5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          onClick={onUndo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo2 className="size-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          onClick={onRedo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Y)"
+        >
+          <Redo2 className="size-3.5" />
+        </Button>
+      </div>
 
       <div className="flex-1" />
 

@@ -7,6 +7,12 @@ import type { PlacedField } from '@/types';
 import { cn } from '@/lib/utils';
 import { CanvasToolbar } from '@/components/app/CanvasToolbar';
 
+function fontFamilyFor(font: PlacedField['font']): string {
+  if (font === 'Courier') return 'monospace';
+  if (font === 'Times-Roman') return 'serif';
+  return 'sans-serif';
+}
+
 function getFieldStyle(
   field: PlacedField,
   zoom: number,
@@ -18,25 +24,27 @@ function getFieldStyle(
     width: `${field.width}%`,
   };
 
+  const align = field.align ?? 'left';
+
   if (isPreviewMode) {
     return {
       ...base,
       color: field.color,
-      fontFamily:
-        field.font === 'Helvetica'
-          ? 'sans-serif'
-          : field.font === 'Courier'
-          ? 'monospace'
-          : 'serif',
+      fontFamily: fontFamilyFor(field.font),
       fontSize: `${Math.max(8, field.fontSize * zoom)}px`,
       fontWeight: field.isBold ? 'bold' : 'normal',
       fontStyle: field.isItalic ? 'italic' : 'normal',
+      textAlign: align,
+      justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start',
     };
   }
 
   return {
     ...base,
     fontSize: `${Math.max(8, field.fontSize * 0.75 * zoom)}px`,
+    fontFamily: fontFamilyFor(field.font),
+    fontWeight: field.isBold ? 'bold' : 'normal',
+    fontStyle: field.isItalic ? 'italic' : 'normal',
   };
 }
 
@@ -52,12 +60,16 @@ interface EditorCanvasProps {
   previewRowIndex: number;
   csvRows: Record<string, string>[];
   zoom: number;
+  canUndo: boolean;
+  canRedo: boolean;
   onPageChange: (page: number) => void;
   onZoomChange: (zoom: number) => void;
   onTogglePreview: () => void;
   onPreviewRowChange: (index: number) => void;
   onSelectField: (id: string | null) => void;
   onClearAllFields: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
   onFieldMouseDown: (e: React.MouseEvent, field: PlacedField) => void;
   onFieldTouchStart: (e: React.TouchEvent, field: PlacedField) => void;
   onResizeMouseDown: (e: React.MouseEvent, field: PlacedField) => void;
@@ -77,12 +89,16 @@ export function EditorCanvas({
   previewRowIndex,
   csvRows,
   zoom,
+  canUndo,
+  canRedo,
   onPageChange,
   onZoomChange,
   onTogglePreview,
   onPreviewRowChange,
   onSelectField,
   onClearAllFields,
+  onUndo,
+  onRedo,
   onFieldMouseDown,
   onFieldTouchStart,
   onResizeMouseDown,
@@ -100,11 +116,15 @@ export function EditorCanvas({
         currentPage={currentPage}
         zoom={zoom}
         placedFields={placedFields}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onTogglePreview={onTogglePreview}
         onPreviewRowChange={onPreviewRowChange}
         onPageChange={onPageChange}
         onZoomChange={onZoomChange}
         onClearAllFields={onClearAllFields}
+        onUndo={onUndo}
+        onRedo={onRedo}
       />
 
       {/* Canvas Workspace */}
@@ -140,71 +160,93 @@ export function EditorCanvas({
             {/* Field overlay layer */}
             <div className="absolute inset-0 z-10 overflow-hidden">
               {placedFields.flatMap((field) => {
-                  if (field.page !== currentPage) return [];
-                  const isSelected = field.id === selectedFieldId;
-                  const displayVal =
-                    isPreviewMode && csvRows[previewRowIndex]
-                      ? csvRows[previewRowIndex][field.fieldName] || ''
-                      : `{{${field.fieldName}}}`;
+                if (field.page !== currentPage) return [];
+                const isSelected = field.id === selectedFieldId;
+                const displayVal =
+                  isPreviewMode && csvRows[previewRowIndex]
+                    ? csvRows[previewRowIndex][field.fieldName] || ''
+                    : `{{${field.fieldName}}}`;
 
-                  return [(
-                    <div
-                      key={field.id}
-                      role="button"
-                      tabIndex={isPreviewMode ? -1 : 0}
-                      aria-disabled={isPreviewMode || undefined}
-                      style={getFieldStyle(field, zoom, isPreviewMode)}
-                      onMouseDown={(e) => onFieldMouseDown(e, field)}
-                      onTouchStart={(e) => onFieldTouchStart(e, field)}
-                      className={cn(
-                        'absolute z-20 flex items-center overflow-hidden whitespace-nowrap select-none rounded transition-shadow',
-                        isPreviewMode
-                          ? 'pointer-events-none cursor-default bg-transparent'
-                          : cn(
-                              'cursor-grab active:cursor-grabbing',
-                              'bg-zinc-900/85 text-white dark:bg-zinc-100 dark:text-zinc-900',
-                              'pl-1 pr-3 shadow-sm',
-                              isSelected
-                                ? 'ring-2 ring-primary ring-offset-1 ring-offset-white/50 dark:ring-offset-zinc-900/50'
-                                : 'hover:bg-zinc-950/90 dark:hover:bg-white/95'
-                            )
-                      )}
-                    >
-                      {!isPreviewMode && (
+                const align = field.align ?? 'left';
+
+                return [(
+                  <div
+                    key={field.id}
+                    role="button"
+                    tabIndex={isPreviewMode ? -1 : 0}
+                    aria-disabled={isPreviewMode || undefined}
+                    style={getFieldStyle(field, zoom, isPreviewMode)}
+                    onMouseDown={(e) => onFieldMouseDown(e, field)}
+                    onTouchStart={(e) => onFieldTouchStart(e, field)}
+                    className={cn(
+                      'absolute z-20 flex items-center overflow-hidden whitespace-nowrap select-none rounded transition-shadow',
+                      isPreviewMode
+                        ? 'pointer-events-none cursor-default bg-transparent'
+                        : cn(
+                            'cursor-grab active:cursor-grabbing',
+                            'bg-zinc-900/85 text-white dark:bg-zinc-100 dark:text-zinc-900',
+                            'pl-1 pr-3 shadow-sm',
+                            isSelected
+                              ? 'ring-2 ring-primary ring-offset-1 ring-offset-white/50 dark:ring-offset-zinc-900/50'
+                              : 'hover:bg-zinc-950/90 dark:hover:bg-white/95'
+                          )
+                    )}
+                  >
+                    {!isPreviewMode && (
+                      <>
+                        {/* Color dot hint */}
+                        <span
+                          className="mr-1 size-2 shrink-0 rounded-full opacity-80"
+                          style={{ backgroundColor: field.color }}
+                        />
                         <Move
                           className="mr-0.5 shrink-0 opacity-50"
                           style={{ width: '0.85em', height: '0.85em' }}
                         />
+                      </>
+                    )}
+
+                    {/* Text content with alignment */}
+                    <div
+                      className={cn(
+                        'flex-1 overflow-hidden',
+                        !isPreviewMode && (
+                          align === 'right' ? 'text-right' :
+                          align === 'center' ? 'text-center' :
+                          'text-left'
+                        )
                       )}
+                    >
                       <span className="truncate leading-none">
                         {displayVal || (
                           <span className="italic opacity-40">empty</span>
                         )}
                       </span>
-
-                      {/* Resize grip */}
-                      {isSelected && !isPreviewMode && (
-                        <button
-                          type="button"
-                          tabIndex={0}
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            onResizeMouseDown(e, field);
-                          }}
-                          onTouchStart={(e) => {
-                            e.stopPropagation();
-                            onResizeTouchStart(e, field);
-                          }}
-                          className="absolute bottom-0 right-0 top-0 flex w-2.5 cursor-ew-resize items-center justify-center rounded-r bg-white/20 text-[7px] font-bold text-white/70 select-none hover:bg-white/40 active:bg-white/60 dark:bg-zinc-900/20 dark:text-zinc-900/70 dark:hover:bg-zinc-900/40"
-                          aria-label="Drag to resize field width"
-                          title="Drag to resize field width"
-                        >
-                          ⋮
-                        </button>
-                      )}
                     </div>
-                  )];
-                })}
+
+                    {/* Resize grip */}
+                    {isSelected && !isPreviewMode && (
+                      <button
+                        type="button"
+                        tabIndex={0}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          onResizeMouseDown(e, field);
+                        }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                          onResizeTouchStart(e, field);
+                        }}
+                        className="absolute bottom-0 right-0 top-0 flex w-2.5 cursor-ew-resize items-center justify-center rounded-r bg-white/20 text-[7px] font-bold text-white/70 select-none hover:bg-white/40 active:bg-white/60 dark:bg-zinc-900/20 dark:text-zinc-900/70 dark:hover:bg-zinc-900/40"
+                        aria-label="Drag to resize field width"
+                        title="Drag to resize field width"
+                      >
+                        ⋮
+                      </button>
+                    )}
+                  </div>
+                )];
+              })}
             </div>
           </div>
         ) : (
