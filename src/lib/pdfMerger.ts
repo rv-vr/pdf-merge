@@ -24,6 +24,7 @@ export interface PlacedField {
   isBold: boolean;
   isItalic: boolean;
   width: number; // width as percentage of page width (0 - 100)
+  align?: 'left' | 'center' | 'right';
 }
 
 
@@ -132,9 +133,18 @@ async function generateSingleMergedPDF(
     const textValue = row[field.fieldName] !== undefined ? row[field.fieldName] : `{{${field.fieldName}}}`;
 
     const font = fontCache.get(`${field.font}|${field.isBold}|${field.isItalic}`)!;
-    
+
     // Translate coordinate (canvas top-left percentage -> PDF bottom-left points)
-    const { x, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
+    let { x, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
+
+    // Apply text alignment within the field box
+    const fieldWidthPts = (field.width / 100) * pdfWidth;
+    const align = field.align ?? 'left';
+    if (align !== 'left') {
+      const textWidth = font.widthOfTextAtSize(textValue, field.fontSize);
+      if (align === 'center') x += (fieldWidthPts - textWidth) / 2;
+      else if (align === 'right') x += fieldWidthPts - textWidth;
+    }
 
     const { r, g, b } = hexToRgb(field.color);
 
