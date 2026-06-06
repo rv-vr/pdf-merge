@@ -76,9 +76,6 @@ export function Inspector({ selectedField, onUpdate, onDuplicate, onDelete }: In
               <p className="truncate text-sm font-semibold leading-tight">
                 {selectedField.fieldName}
               </p>
-              <code className="font-mono text-[10px] text-muted-foreground">
-                {`{{${selectedField.fieldName}}}`}
-              </code>
             </div>
             <Button
               variant="ghost"
