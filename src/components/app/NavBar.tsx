@@ -26,42 +26,39 @@ const SHORTCUT_GROUPS = [
   {
     label: 'History',
     shortcuts: [
-      { keys: ['Ctrl', 'Z'], description: 'Undo' },
-      { keys: ['Ctrl', 'Y'], description: 'Redo' },
-      { keys: ['Ctrl', 'Shift', 'Z'], description: 'Redo (alternative)' },
+      { keySets: [['Ctrl', 'Z']], description: 'Undo' },
+      { keySets: [['Ctrl', 'Y'], ['Ctrl', 'Shift', 'Z']], description: 'Redo' },
     ],
   },
   {
     label: 'Typography',
     shortcuts: [
-      { keys: ['Ctrl', 'B'], description: 'Toggle bold' },
-      { keys: ['Ctrl', 'I'], description: 'Toggle italic' },
-      { keys: ['Ctrl', 'Shift', 'L'], description: 'Align left' },
-      { keys: ['Ctrl', 'Shift', 'E'], description: 'Align center' },
-      { keys: ['Ctrl', 'Shift', 'R'], description: 'Align right' },
+      { keySets: [['Ctrl', 'B']], description: 'Toggle bold' },
+      { keySets: [['Ctrl', 'I']], description: 'Toggle italic' },
+      { keySets: [['Ctrl', 'Shift', 'L']], description: 'Align left' },
+      { keySets: [['Ctrl', 'Shift', 'E']], description: 'Align center' },
+      { keySets: [['Ctrl', 'Shift', 'R']], description: 'Align right' },
     ],
   },
   {
     label: 'Field position',
     shortcuts: [
-      { keys: ['↑ ↓ ← →'], description: 'Nudge field by 0.5%' },
-      { keys: ['Shift', '↑ ↓ ← →'], description: 'Nudge field by 2%' },
+      { keySets: [['↑ ↓ ← →'], ['Shift', '↑ ↓ ← →']], description: 'Nudge field' },
     ],
   },
   {
     label: 'Layer order',
     shortcuts: [
-      { keys: [']'], description: 'Move forward one layer' },
-      { keys: ['['], description: 'Move backward one layer' },
-      { keys: ['Ctrl', ']'], description: 'Bring to front' },
-      { keys: ['Ctrl', '['], description: 'Send to back' },
+      { keySets: [[']']], description: 'Move forward one layer' },
+      { keySets: [['[']], description: 'Move backward one layer' },
+      { keySets: [['Ctrl', ']']], description: 'Bring to front' },
+      { keySets: [['Ctrl', '[']], description: 'Send to back' },
     ],
   },
   {
     label: 'Field management',
     shortcuts: [
-      { keys: ['Delete'], description: 'Delete selected field' },
-      { keys: ['Backspace'], description: 'Delete selected field' },
+      { keySets: [['Delete'], ['Backspace']], description: 'Delete selected field' },
     ],
   },
 ];
@@ -100,7 +97,7 @@ export function NavBar({
 
         {view === 'editor' && pdfFileName && (
           <>
-            <Separator orientation="vertical" className="h-5" />
+            <Separator orientation="vertical"  />
             <Button
               variant="ghost"
               size="sm"
@@ -156,7 +153,7 @@ export function NavBar({
 
         {view === 'editor' && (
           <>
-            <Separator orientation="vertical" className="h-5" />
+            <Separator orientation="vertical"  />
             <Button onClick={onExportClick} size="sm" className="gap-1.5" disabled={!canExport}>
               <Download className="size-3.5" />
               Export
@@ -220,11 +217,6 @@ export function NavBar({
                 then export your documents!
               </p>
             </div>
-            <Separator />
-            <div className="rounded-lg bg-muted p-3 text-xs">
-              <strong>🔒 Absolute Privacy:</strong> PDF rendering, CSV parsing, and document
-              assembly are done 100% in your browser. No files or values are sent to any server.
-            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -249,9 +241,10 @@ export function NavBar({
                     <div key={i} className="flex items-center justify-between gap-4">
                       <span className="text-sm text-foreground">{s.description}</span>
                       <div className="flex shrink-0 items-center gap-1">
-                        {s.keys.map((k) => (
-                          <Kbd key={k}>{k}</Kbd>
-                        ))}
+                        {s.keySets.flatMap((keySet, j) => [
+                          ...(j > 0 ? [<span key={`sep-${j}`} className="px-0.5 text-[10px] text-muted-foreground">/</span>] : []),
+                          ...keySet.map((k) => <Kbd key={`${j}-${k}`}>{k}</Kbd>),
+                        ])}
                       </div>
                     </div>
                   ))}
