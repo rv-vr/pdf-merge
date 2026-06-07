@@ -13,7 +13,7 @@ import { useFieldEditor } from '@/hooks/useFieldEditor';
 import { useExport } from '@/hooks/useExport';
 import { Monitor } from 'lucide-react';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `${import.meta.env.BASE_URL}pdf.worker.min.mjs`;
 
 const THEME_STORAGE_KEY = 'pdf-merger-theme';
 
