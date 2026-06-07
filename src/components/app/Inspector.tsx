@@ -155,16 +155,28 @@ export function Inspector({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position='popper'>
+                  <SelectItem value="Helvetica">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Helvetica</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">Pre-installed Standard Sans</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Times-Roman">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Times New Roman</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">Pre-installed Standard Serif</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Courier">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Courier</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">Pre-installed Standard Mono</span>
+                    </div>
+                  </SelectItem>
                   <SelectItem value="Arimo">
                     <div className="flex flex-col text-left">
                       <span className="text-sm font-medium">Arimo</span>
                       <span className="text-[9px] text-muted-foreground leading-none">equivalent to Arial</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Tinos">
-                    <div className="flex flex-col text-left">
-                      <span className="text-sm font-medium">Tinos</span>
-                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Times New Roman</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="Carlito">
@@ -179,12 +191,6 @@ export function Inspector({
                       <span className="text-[9px] text-muted-foreground leading-none">equivalent to Garamond</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value="Inter">
-                    <div className="flex flex-col text-left">
-                      <span className="text-sm font-medium">Inter</span>
-                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Helvetica</span>
-                    </div>
-                  </SelectItem>
                   <SelectItem value="Lora">
                     <div className="flex flex-col text-left">
                       <span className="text-sm font-medium">Lora</span>
@@ -195,6 +201,12 @@ export function Inspector({
                     <div className="flex flex-col text-left">
                       <span className="text-sm font-medium">Open Sans</span>
                       <span className="text-[9px] text-muted-foreground leading-none">equivalent to Tahoma / Verdana</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Open Sans Condensed">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Open Sans Condensed</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Tahoma / Verdana Condensed</span>
                     </div>
                   </SelectItem>
                 </SelectContent>

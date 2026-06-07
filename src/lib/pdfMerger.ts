@@ -19,7 +19,7 @@ export interface PlacedField {
   x: number; // percentage from left of canvas (0 - 100)
   y: number; // percentage from top of canvas (0 - 100)
   page: number; // page number (1-indexed)
-  font: 'Arimo' | 'Tinos' | 'Carlito' | 'EB Garamond' | 'Inter' | 'Lora' | 'Open Sans';
+  font: 'Helvetica' | 'Times-Roman' | 'Courier' | 'Arimo' | 'Carlito' | 'EB Garamond' | 'Lora' | 'Open Sans' | 'Open Sans Condensed';
   fontSize: number;
   color: string; // hex color (e.g. #000000)
   isBold: boolean;
@@ -69,46 +69,40 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
  */
 const GOOGLE_FONTS_URLS: Record<string, { regular: string; bold: string; italic: string; boldItalic: string }> = {
   'Arimo': {
-    regular: 'https://fonts.gstatic.com/s/arimo/v28/P5sMzZBg7FTnOfDY8cM42A.ttf',
-    bold: 'https://fonts.gstatic.com/s/arimo/v28/P5sMzZBg7FTnOfDY6MM42N0.ttf',
-    italic: 'https://fonts.gstatic.com/s/arimo/v28/P5sZzZBg7FTnOfDY_c4R2NDy.ttf',
-    boldItalic: 'https://fonts.gstatic.com/s/arimo/v28/P5seZZBg7FTnOfDY_c4h1NEXzME.ttf'
-  },
-  'Tinos': {
-    regular: 'https://fonts.gstatic.com/s/tinos/v21/Hhy9U5Q4V4w2oW2bCGQ.ttf',
-    bold: 'https://fonts.gstatic.com/s/tinos/v21/Hhy6U5Q4V4w2oW2bIG8-Bg.ttf',
-    italic: 'https://fonts.gstatic.com/s/tinos/v21/Hhy7U5Q4V4w2oW2bCGQPMA.ttf',
-    boldItalic: 'https://fonts.gstatic.com/s/tinos/v21/Hhy5U5Q4V4w2oW2bCGQPHG8-Bs0.ttf'
+    regular: '/fonts/Arimo/Arimo-Regular.ttf',
+    bold: '/fonts/Arimo/Arimo-Bold.ttf',
+    italic: '/fonts/Arimo/Arimo-Italic.ttf',
+    boldItalic: '/fonts/Arimo/Arimo-BoldItalic.ttf'
   },
   'Carlito': {
-    regular: 'https://fonts.gstatic.com/s/carlito/v21/a80PENJa3kPK_Fw5G2E.ttf',
-    bold: 'https://fonts.gstatic.com/s/carlito/v21/a80AENJa3kPK_Fw5O4szc1c.ttf',
-    italic: 'https://fonts.gstatic.com/s/carlito/v21/a80OENJa3kPK_Fw5G2EqeA.ttf',
-    boldItalic: 'https://fonts.gstatic.com/s/carlito/v21/a809ENJa3kPK_Fw5G2EqlFszc1c.ttf'
+    regular: '/fonts/Carlito/Carlito-Regular.ttf',
+    bold: '/fonts/Carlito/Carlito-Bold.ttf',
+    italic: '/fonts/Carlito/Carlito-Italic.ttf',
+    boldItalic: '/fonts/Carlito/Carlito-BoldItalic.ttf'
   },
   'EB Garamond': {
-    regular: 'https://fonts.gstatic.com/s/ebgaramond/v26/DK1tFFrssaR547Ei8y6u0A8u.ttf',
-    bold: 'https://fonts.gstatic.com/s/ebgaramond/v26/DK1wFFrssaR547Ei8y6u0C8q-pQ.ttf',
-    italic: 'https://fonts.gstatic.com/s/ebgaramond/v26/DK1rFFrssaR547Ei8y6u0A8u-Lcy.ttf',
-    boldItalic: 'https://fonts.gstatic.com/s/ebgaramond/v26/DK1yFFrssaR547Ei8y6u0C8q-pQy3w.ttf'
+    regular: '/fonts/EB_Garamond/EBGaramond-Regular.ttf',
+    bold: '/fonts/EB_Garamond/EBGaramond-Bold.ttf',
+    italic: '/fonts/EB_Garamond/EBGaramond-Italic.ttf',
+    boldItalic: '/fonts/EB_Garamond/EBGaramond-BoldItalic.ttf'
   },
   'Lora': {
-    regular: 'https://fonts.gstatic.com/s/lora/v32/0QI6MX1D_JOuMw_LIftL.ttf',
-    bold: 'https://fonts.gstatic.com/s/lora/v32/0QI8MX1D_JOuMw_Dmt73aA.ttf',
-    italic: 'https://fonts.gstatic.com/s/lora/v32/0QI7MX1D_JOuMw_LMvN1cYg.ttf',
-    boldItalic: 'https://fonts.gstatic.com/s/lora/v32/0QI9MX1D_JOuMw_LMvNVKZqWbg.ttf'
-  },
-  'Inter': {
-    regular: 'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrj72A.ttf',
-    bold: 'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZhrj72A.ttf',
-    italic: 'https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dthjZ-Ck-8.ttf',
-    boldItalic: 'https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcPtxhjZ-Ck-8.ttf'
+    regular: '/fonts/Lora/Lora-Regular.ttf',
+    bold: '/fonts/Lora/Lora-Bold.ttf',
+    italic: '/fonts/Lora/Lora-Italic.ttf',
+    boldItalic: '/fonts/Lora/Lora-BoldItalic.ttf'
   },
   'Open Sans': {
-    regular: 'https://fonts.gstatic.com/s/opensans/v44/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0C4nY1U2xQ.ttf',
-    bold: 'https://fonts.gstatic.com/s/opensans/v44/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1y4nY1U2xQ.ttf',
-    italic: 'https://fonts.gstatic.com/s/opensans/v44/memQYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWq8tWZ0Pw86hd0Rk8ZkaVcUx6EQ.ttf',
-    boldItalic: 'https://fonts.gstatic.com/s/opensans/v44/memQYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWq8tWZ0Pw86hd0RkyFjaVcUx6EQ.ttf'
+    regular: '/fonts/Open_Sans/OpenSans-Regular.ttf',
+    bold: '/fonts/Open_Sans/OpenSans-Bold.ttf',
+    italic: '/fonts/Open_Sans/OpenSans-Italic.ttf',
+    boldItalic: '/fonts/Open_Sans/OpenSans-BoldItalic.ttf'
+  },
+  'Open Sans Condensed': {
+    regular: '/fonts/Open_Sans/OpenSans_Condensed-Regular.ttf',
+    bold: '/fonts/Open_Sans/OpenSans_Condensed-Bold.ttf',
+    italic: '/fonts/Open_Sans/OpenSans_Condensed-Italic.ttf',
+    boldItalic: '/fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf'
   }
 };
 

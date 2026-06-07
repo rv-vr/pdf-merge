@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { PlacedField } from '@/types';
 
 type FieldProps = {
-  font: 'Arimo' | 'Tinos' | 'Carlito' | 'EB Garamond' | 'Inter' | 'Lora' | 'Open Sans';
+  font: 'Helvetica' | 'Times-Roman' | 'Courier' | 'Arimo' | 'Carlito' | 'EB Garamond' | 'Lora' | 'Open Sans' | 'Open Sans Condensed';
   fontSize: number;
   color: string;
   isBold: boolean;
@@ -12,7 +12,7 @@ type FieldProps = {
 };
 
 const DEFAULT_FIELD_PROPS: FieldProps = {
-  font: 'Inter',
+  font: 'Helvetica',
   fontSize: 14,
   color: '#000000',
   isBold: false,
