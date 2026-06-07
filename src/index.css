@@ -133,150 +133,150 @@
 
 @font-face {
   font-family: 'Arimo';
-  src: url('/fonts/Arimo/Arimo-Regular.ttf') format('truetype');
+  src: url('../fonts/Arimo/Arimo-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
   font-family: 'Arimo';
-  src: url('/fonts/Arimo/Arimo-Bold.ttf') format('truetype');
+  src: url('../fonts/Arimo/Arimo-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
   font-family: 'Arimo';
-  src: url('/fonts/Arimo/Arimo-Italic.ttf') format('truetype');
+  src: url('../fonts/Arimo/Arimo-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
 }
 @font-face {
   font-family: 'Arimo';
-  src: url('/fonts/Arimo/Arimo-BoldItalic.ttf') format('truetype');
+  src: url('../fonts/Arimo/Arimo-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
 }
 
 @font-face {
   font-family: 'Carlito';
-  src: url('/fonts/Carlito/Carlito-Regular.ttf') format('truetype');
+  src: url('../fonts/Carlito/Carlito-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
   font-family: 'Carlito';
-  src: url('/fonts/Carlito/Carlito-Bold.ttf') format('truetype');
+  src: url('../fonts/Carlito/Carlito-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
   font-family: 'Carlito';
-  src: url('/fonts/Carlito/Carlito-Italic.ttf') format('truetype');
+  src: url('../fonts/Carlito/Carlito-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
 }
 @font-face {
   font-family: 'Carlito';
-  src: url('/fonts/Carlito/Carlito-BoldItalic.ttf') format('truetype');
+  src: url('../fonts/Carlito/Carlito-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
 }
 
 @font-face {
   font-family: 'EB Garamond';
-  src: url('/fonts/EB_Garamond/EBGaramond-Regular.ttf') format('truetype');
+  src: url('../fonts/EB_Garamond/EBGaramond-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
   font-family: 'EB Garamond';
-  src: url('/fonts/EB_Garamond/EBGaramond-Bold.ttf') format('truetype');
+  src: url('../fonts/EB_Garamond/EBGaramond-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
   font-family: 'EB Garamond';
-  src: url('/fonts/EB_Garamond/EBGaramond-Italic.ttf') format('truetype');
+  src: url('../fonts/EB_Garamond/EBGaramond-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
 }
 @font-face {
   font-family: 'EB Garamond';
-  src: url('/fonts/EB_Garamond/EBGaramond-BoldItalic.ttf') format('truetype');
+  src: url('../fonts/EB_Garamond/EBGaramond-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
 }
 
 @font-face {
   font-family: 'Lora';
-  src: url('/fonts/Lora/Lora-Regular.ttf') format('truetype');
+  src: url('../fonts/Lora/Lora-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
   font-family: 'Lora';
-  src: url('/fonts/Lora/Lora-Bold.ttf') format('truetype');
+  src: url('../fonts/Lora/Lora-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
   font-family: 'Lora';
-  src: url('/fonts/Lora/Lora-Italic.ttf') format('truetype');
+  src: url('../fonts/Lora/Lora-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
 }
 @font-face {
   font-family: 'Lora';
-  src: url('/fonts/Lora/Lora-BoldItalic.ttf') format('truetype');
+  src: url('../fonts/Lora/Lora-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
 }
 
 @font-face {
   font-family: 'Open Sans';
-  src: url('/fonts/Open_Sans/OpenSans-Regular.ttf') format('truetype');
+  src: url('../fonts/Open_Sans/OpenSans-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
   font-family: 'Open Sans';
-  src: url('/fonts/Open_Sans/OpenSans-Bold.ttf') format('truetype');
+  src: url('../fonts/Open_Sans/OpenSans-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
   font-family: 'Open Sans';
-  src: url('/fonts/Open_Sans/OpenSans-Italic.ttf') format('truetype');
+  src: url('../fonts/Open_Sans/OpenSans-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
 }
 @font-face {
   font-family: 'Open Sans';
-  src: url('/fonts/Open_Sans/OpenSans-BoldItalic.ttf') format('truetype');
+  src: url('../fonts/Open_Sans/OpenSans-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
 }
 
 @font-face {
   font-family: 'Open Sans Condensed';
-  src: url('/fonts/Open_Sans/OpenSans_Condensed-Regular.ttf') format('truetype');
+  src: url('../fonts/Open_Sans/OpenSans_Condensed-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
   font-family: 'Open Sans Condensed';
-  src: url('/fonts/Open_Sans/OpenSans_Condensed-Bold.ttf') format('truetype');
+  src: url('../fonts/Open_Sans/OpenSans_Condensed-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
   font-family: 'Open Sans Condensed';
-  src: url('/fonts/Open_Sans/OpenSans_Condensed-Italic.ttf') format('truetype');
+  src: url('../fonts/Open_Sans/OpenSans_Condensed-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
 }
 @font-face {
   font-family: 'Open Sans Condensed';
-  src: url('/fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf') format('truetype');
+  src: url('../fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
 }
