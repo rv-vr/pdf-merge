@@ -67,42 +67,44 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 /**
  * Helper to resolve the correct font style based on parameters
  */
+const base = import.meta.env.BASE_URL;
+
 const GOOGLE_FONTS_URLS: Record<string, { regular: string; bold: string; italic: string; boldItalic: string }> = {
   'Arimo': {
-    regular: '/fonts/Arimo/Arimo-Regular.ttf',
-    bold: '/fonts/Arimo/Arimo-Bold.ttf',
-    italic: '/fonts/Arimo/Arimo-Italic.ttf',
-    boldItalic: '/fonts/Arimo/Arimo-BoldItalic.ttf'
+    regular: `${base}fonts/Arimo/Arimo-Regular.ttf`,
+    bold: `${base}fonts/Arimo/Arimo-Bold.ttf`,
+    italic: `${base}fonts/Arimo/Arimo-Italic.ttf`,
+    boldItalic: `${base}fonts/Arimo/Arimo-BoldItalic.ttf`
   },
   'Carlito': {
-    regular: '/fonts/Carlito/Carlito-Regular.ttf',
-    bold: '/fonts/Carlito/Carlito-Bold.ttf',
-    italic: '/fonts/Carlito/Carlito-Italic.ttf',
-    boldItalic: '/fonts/Carlito/Carlito-BoldItalic.ttf'
+    regular: `${base}fonts/Carlito/Carlito-Regular.ttf`,
+    bold: `${base}fonts/Carlito/Carlito-Bold.ttf`,
+    italic: `${base}fonts/Carlito/Carlito-Italic.ttf`,
+    boldItalic: `${base}fonts/Carlito/Carlito-BoldItalic.ttf`
   },
   'EB Garamond': {
-    regular: '/fonts/EB_Garamond/EBGaramond-Regular.ttf',
-    bold: '/fonts/EB_Garamond/EBGaramond-Bold.ttf',
-    italic: '/fonts/EB_Garamond/EBGaramond-Italic.ttf',
-    boldItalic: '/fonts/EB_Garamond/EBGaramond-BoldItalic.ttf'
+    regular: `${base}fonts/EB_Garamond/EBGaramond-Regular.ttf`,
+    bold: `${base}fonts/EB_Garamond/EBGaramond-Bold.ttf`,
+    italic: `${base}fonts/EB_Garamond/EBGaramond-Italic.ttf`,
+    boldItalic: `${base}fonts/EB_Garamond/EBGaramond-BoldItalic.ttf`
   },
   'Lora': {
-    regular: '/fonts/Lora/Lora-Regular.ttf',
-    bold: '/fonts/Lora/Lora-Bold.ttf',
-    italic: '/fonts/Lora/Lora-Italic.ttf',
-    boldItalic: '/fonts/Lora/Lora-BoldItalic.ttf'
+    regular: `${base}fonts/Lora/Lora-Regular.ttf`,
+    bold: `${base}fonts/Lora/Lora-Bold.ttf`,
+    italic: `${base}fonts/Lora/Lora-Italic.ttf`,
+    boldItalic: `${base}fonts/Lora/Lora-BoldItalic.ttf`
   },
   'Open Sans': {
-    regular: '/fonts/Open_Sans/OpenSans-Regular.ttf',
-    bold: '/fonts/Open_Sans/OpenSans-Bold.ttf',
-    italic: '/fonts/Open_Sans/OpenSans-Italic.ttf',
-    boldItalic: '/fonts/Open_Sans/OpenSans-BoldItalic.ttf'
+    regular: `${base}fonts/Open_Sans/OpenSans-Regular.ttf`,
+    bold: `${base}fonts/Open_Sans/OpenSans-Bold.ttf`,
+    italic: `${base}fonts/Open_Sans/OpenSans-Italic.ttf`,
+    boldItalic: `${base}fonts/Open_Sans/OpenSans-BoldItalic.ttf`
   },
   'Open Sans Condensed': {
-    regular: '/fonts/Open_Sans/OpenSans_Condensed-Regular.ttf',
-    bold: '/fonts/Open_Sans/OpenSans_Condensed-Bold.ttf',
-    italic: '/fonts/Open_Sans/OpenSans_Condensed-Italic.ttf',
-    boldItalic: '/fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf'
+    regular: `${base}fonts/Open_Sans/OpenSans_Condensed-Regular.ttf`,
+    bold: `${base}fonts/Open_Sans/OpenSans_Condensed-Bold.ttf`,
+    italic: `${base}fonts/Open_Sans/OpenSans_Condensed-Italic.ttf`,
+    boldItalic: `${base}fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf`
   }
 };
 
