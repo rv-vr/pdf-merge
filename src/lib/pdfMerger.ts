@@ -11,6 +11,7 @@ import {
   endPath 
 } from 'pdf-lib';
 import JSZip from 'jszip';
+import fontkit from '@pdf-lib/fontkit';
 
 export interface PlacedField {
   id: string;
@@ -18,7 +19,7 @@ export interface PlacedField {
   x: number; // percentage from left of canvas (0 - 100)
   y: number; // percentage from top of canvas (0 - 100)
   page: number; // page number (1-indexed)
-  font: 'Helvetica' | 'Times-Roman' | 'Courier';
+  font: 'Arimo' | 'Tinos' | 'Carlito' | 'EB Garamond' | 'Inter' | 'Lora' | 'Open Sans';
   fontSize: number;
   color: string; // hex color (e.g. #000000)
   isBold: boolean;
@@ -66,33 +67,105 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 /**
  * Helper to resolve the correct font style based on parameters
  */
+const GOOGLE_FONTS_URLS: Record<string, { regular: string; bold: string; italic: string; boldItalic: string }> = {
+  'Arimo': {
+    regular: 'https://fonts.gstatic.com/s/arimo/v28/P5sMzZBg7FTnOfDY8cM42A.ttf',
+    bold: 'https://fonts.gstatic.com/s/arimo/v28/P5sMzZBg7FTnOfDY6MM42N0.ttf',
+    italic: 'https://fonts.gstatic.com/s/arimo/v28/P5sZzZBg7FTnOfDY_c4R2NDy.ttf',
+    boldItalic: 'https://fonts.gstatic.com/s/arimo/v28/P5seZZBg7FTnOfDY_c4h1NEXzME.ttf'
+  },
+  'Tinos': {
+    regular: 'https://fonts.gstatic.com/s/tinos/v21/Hhy9U5Q4V4w2oW2bCGQ.ttf',
+    bold: 'https://fonts.gstatic.com/s/tinos/v21/Hhy6U5Q4V4w2oW2bIG8-Bg.ttf',
+    italic: 'https://fonts.gstatic.com/s/tinos/v21/Hhy7U5Q4V4w2oW2bCGQPMA.ttf',
+    boldItalic: 'https://fonts.gstatic.com/s/tinos/v21/Hhy5U5Q4V4w2oW2bCGQPHG8-Bs0.ttf'
+  },
+  'Carlito': {
+    regular: 'https://fonts.gstatic.com/s/carlito/v21/a80PENJa3kPK_Fw5G2E.ttf',
+    bold: 'https://fonts.gstatic.com/s/carlito/v21/a80AENJa3kPK_Fw5O4szc1c.ttf',
+    italic: 'https://fonts.gstatic.com/s/carlito/v21/a80OENJa3kPK_Fw5G2EqeA.ttf',
+    boldItalic: 'https://fonts.gstatic.com/s/carlito/v21/a809ENJa3kPK_Fw5G2EqlFszc1c.ttf'
+  },
+  'EB Garamond': {
+    regular: 'https://fonts.gstatic.com/s/ebgaramond/v26/DK1tFFrssaR547Ei8y6u0A8u.ttf',
+    bold: 'https://fonts.gstatic.com/s/ebgaramond/v26/DK1wFFrssaR547Ei8y6u0C8q-pQ.ttf',
+    italic: 'https://fonts.gstatic.com/s/ebgaramond/v26/DK1rFFrssaR547Ei8y6u0A8u-Lcy.ttf',
+    boldItalic: 'https://fonts.gstatic.com/s/ebgaramond/v26/DK1yFFrssaR547Ei8y6u0C8q-pQy3w.ttf'
+  },
+  'Lora': {
+    regular: 'https://fonts.gstatic.com/s/lora/v32/0QI6MX1D_JOuMw_LIftL.ttf',
+    bold: 'https://fonts.gstatic.com/s/lora/v32/0QI8MX1D_JOuMw_Dmt73aA.ttf',
+    italic: 'https://fonts.gstatic.com/s/lora/v32/0QI7MX1D_JOuMw_LMvN1cYg.ttf',
+    boldItalic: 'https://fonts.gstatic.com/s/lora/v32/0QI9MX1D_JOuMw_LMvNVKZqWbg.ttf'
+  },
+  'Inter': {
+    regular: 'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrj72A.ttf',
+    bold: 'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZhrj72A.ttf',
+    italic: 'https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dthjZ-Ck-8.ttf',
+    boldItalic: 'https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcPtxhjZ-Ck-8.ttf'
+  },
+  'Open Sans': {
+    regular: 'https://fonts.gstatic.com/s/opensans/v44/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0C4nY1U2xQ.ttf',
+    bold: 'https://fonts.gstatic.com/s/opensans/v44/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1y4nY1U2xQ.ttf',
+    italic: 'https://fonts.gstatic.com/s/opensans/v44/memQYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWq8tWZ0Pw86hd0Rk8ZkaVcUx6EQ.ttf',
+    boldItalic: 'https://fonts.gstatic.com/s/opensans/v44/memQYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWq8tWZ0Pw86hd0RkyFjaVcUx6EQ.ttf'
+  }
+};
+
+const fontBytesCache = new Map<string, ArrayBuffer>();
+
 async function getEmbeddedFont(
   pdfDoc: PDFDocument,
-  fontType: 'Helvetica' | 'Times-Roman' | 'Courier',
+  fontType: string,
   isBold: boolean,
   isItalic: boolean
 ) {
-  let standardName: StandardFonts;
+  if (fontType === 'Helvetica' || fontType === 'Times-Roman' || fontType === 'Courier') {
+    let standardName: StandardFonts;
 
-  if (fontType === 'Helvetica') {
-    if (isBold && isItalic) standardName = StandardFonts.HelveticaBoldOblique;
-    else if (isBold) standardName = StandardFonts.HelveticaBold;
-    else if (isItalic) standardName = StandardFonts.HelveticaOblique;
-    else standardName = StandardFonts.Helvetica;
-  } else if (fontType === 'Times-Roman') {
-    if (isBold && isItalic) standardName = StandardFonts.TimesRomanBoldItalic;
-    else if (isBold) standardName = StandardFonts.TimesRomanBold;
-    else if (isItalic) standardName = StandardFonts.TimesRomanItalic;
-    else standardName = StandardFonts.TimesRoman;
-  } else {
-    // Courier
-    if (isBold && isItalic) standardName = StandardFonts.CourierBoldOblique;
-    else if (isBold) standardName = StandardFonts.CourierBold;
-    else if (isItalic) standardName = StandardFonts.CourierOblique;
-    else standardName = StandardFonts.Courier;
+    if (fontType === 'Helvetica') {
+      if (isBold && isItalic) standardName = StandardFonts.HelveticaBoldOblique;
+      else if (isBold) standardName = StandardFonts.HelveticaBold;
+      else if (isItalic) standardName = StandardFonts.HelveticaOblique;
+      else standardName = StandardFonts.Helvetica;
+    } else if (fontType === 'Times-Roman') {
+      if (isBold && isItalic) standardName = StandardFonts.TimesRomanBoldItalic;
+      else if (isBold) standardName = StandardFonts.TimesRomanBold;
+      else if (isItalic) standardName = StandardFonts.TimesRomanItalic;
+      else standardName = StandardFonts.TimesRoman;
+    } else {
+      if (isBold && isItalic) standardName = StandardFonts.CourierBoldOblique;
+      else if (isBold) standardName = StandardFonts.CourierBold;
+      else if (isItalic) standardName = StandardFonts.CourierOblique;
+      else standardName = StandardFonts.Courier;
+    }
+
+    return await pdfDoc.embedFont(standardName);
   }
 
-  return await pdfDoc.embedFont(standardName);
+  const fontUrls = GOOGLE_FONTS_URLS[fontType];
+  if (!fontUrls) {
+    return await pdfDoc.embedFont(StandardFonts.Helvetica);
+  }
+
+  let url = fontUrls.regular;
+  if (isBold && isItalic) url = fontUrls.boldItalic;
+  else if (isBold) url = fontUrls.bold;
+  else if (isItalic) url = fontUrls.italic;
+
+  const cacheKey = `${fontType}|${isBold}|${isItalic}`;
+  let bytes = fontBytesCache.get(cacheKey);
+  if (!bytes) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch font from ${url}`);
+    }
+    bytes = await response.arrayBuffer();
+    fontBytesCache.set(cacheKey, bytes);
+  }
+
+  pdfDoc.registerFontkit(fontkit);
+  return await pdfDoc.embedFont(bytes);
 }
 
 /**
@@ -113,7 +186,7 @@ async function generateSingleMergedPDF(
       const [fontType, isBoldStr, isItalicStr] = key.split('|');
       const font = await getEmbeddedFont(
         pdfDoc,
-        fontType as 'Helvetica' | 'Times-Roman' | 'Courier',
+        fontType,
         isBoldStr === 'true',
         isItalicStr === 'true'
       );
