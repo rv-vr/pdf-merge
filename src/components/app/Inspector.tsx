@@ -147,7 +147,7 @@ export function Inspector({
               <Label className="text-xs">Font family</Label>
               <Select
                 value={selectedField.font}
-                onValueChange={(val: 'Helvetica' | 'Times-Roman' | 'Courier') =>
+                onValueChange={(val: PlacedField['font']) =>
                   onUpdateCommit({ font: val })
                 }
               >
@@ -155,9 +155,60 @@ export function Inspector({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position='popper'>
-                  <SelectItem value="Helvetica">Helvetica (Sans-serif)</SelectItem>
-                  <SelectItem value="Times-Roman">Times New Roman (Serif)</SelectItem>
-                  <SelectItem value="Courier">Courier (Monospace)</SelectItem>
+                  <SelectItem value="Helvetica">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Helvetica</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">Pre-installed Standard Sans</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Times-Roman">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Times New Roman</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">Pre-installed Standard Serif</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Courier">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Courier</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">Pre-installed Standard Mono</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Arimo">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Arimo</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Arial</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Carlito">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Carlito</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Calibri</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="EB Garamond">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">EB Garamond</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Garamond</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Lora">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Lora</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Georgia</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Open Sans">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Open Sans</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Tahoma / Verdana</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Open Sans Condensed">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Open Sans Condensed</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Tahoma / Verdana Condensed</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

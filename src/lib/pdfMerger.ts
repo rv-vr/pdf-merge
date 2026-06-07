@@ -11,6 +11,7 @@ import {
   endPath 
 } from 'pdf-lib';
 import JSZip from 'jszip';
+import fontkit from '@pdf-lib/fontkit';
 
 export interface PlacedField {
   id: string;
@@ -18,7 +19,7 @@ export interface PlacedField {
   x: number; // percentage from left of canvas (0 - 100)
   y: number; // percentage from top of canvas (0 - 100)
   page: number; // page number (1-indexed)
-  font: 'Helvetica' | 'Times-Roman' | 'Courier';
+  font: 'Helvetica' | 'Times-Roman' | 'Courier' | 'Arimo' | 'Carlito' | 'EB Garamond' | 'Lora' | 'Open Sans' | 'Open Sans Condensed';
   fontSize: number;
   color: string; // hex color (e.g. #000000)
   isBold: boolean;
@@ -66,33 +67,99 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 /**
  * Helper to resolve the correct font style based on parameters
  */
+const GOOGLE_FONTS_URLS: Record<string, { regular: string; bold: string; italic: string; boldItalic: string }> = {
+  'Arimo': {
+    regular: '/fonts/Arimo/Arimo-Regular.ttf',
+    bold: '/fonts/Arimo/Arimo-Bold.ttf',
+    italic: '/fonts/Arimo/Arimo-Italic.ttf',
+    boldItalic: '/fonts/Arimo/Arimo-BoldItalic.ttf'
+  },
+  'Carlito': {
+    regular: '/fonts/Carlito/Carlito-Regular.ttf',
+    bold: '/fonts/Carlito/Carlito-Bold.ttf',
+    italic: '/fonts/Carlito/Carlito-Italic.ttf',
+    boldItalic: '/fonts/Carlito/Carlito-BoldItalic.ttf'
+  },
+  'EB Garamond': {
+    regular: '/fonts/EB_Garamond/EBGaramond-Regular.ttf',
+    bold: '/fonts/EB_Garamond/EBGaramond-Bold.ttf',
+    italic: '/fonts/EB_Garamond/EBGaramond-Italic.ttf',
+    boldItalic: '/fonts/EB_Garamond/EBGaramond-BoldItalic.ttf'
+  },
+  'Lora': {
+    regular: '/fonts/Lora/Lora-Regular.ttf',
+    bold: '/fonts/Lora/Lora-Bold.ttf',
+    italic: '/fonts/Lora/Lora-Italic.ttf',
+    boldItalic: '/fonts/Lora/Lora-BoldItalic.ttf'
+  },
+  'Open Sans': {
+    regular: '/fonts/Open_Sans/OpenSans-Regular.ttf',
+    bold: '/fonts/Open_Sans/OpenSans-Bold.ttf',
+    italic: '/fonts/Open_Sans/OpenSans-Italic.ttf',
+    boldItalic: '/fonts/Open_Sans/OpenSans-BoldItalic.ttf'
+  },
+  'Open Sans Condensed': {
+    regular: '/fonts/Open_Sans/OpenSans_Condensed-Regular.ttf',
+    bold: '/fonts/Open_Sans/OpenSans_Condensed-Bold.ttf',
+    italic: '/fonts/Open_Sans/OpenSans_Condensed-Italic.ttf',
+    boldItalic: '/fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf'
+  }
+};
+
+const fontBytesCache = new Map<string, ArrayBuffer>();
+
 async function getEmbeddedFont(
   pdfDoc: PDFDocument,
-  fontType: 'Helvetica' | 'Times-Roman' | 'Courier',
+  fontType: string,
   isBold: boolean,
   isItalic: boolean
 ) {
-  let standardName: StandardFonts;
+  if (fontType === 'Helvetica' || fontType === 'Times-Roman' || fontType === 'Courier') {
+    let standardName: StandardFonts;
 
-  if (fontType === 'Helvetica') {
-    if (isBold && isItalic) standardName = StandardFonts.HelveticaBoldOblique;
-    else if (isBold) standardName = StandardFonts.HelveticaBold;
-    else if (isItalic) standardName = StandardFonts.HelveticaOblique;
-    else standardName = StandardFonts.Helvetica;
-  } else if (fontType === 'Times-Roman') {
-    if (isBold && isItalic) standardName = StandardFonts.TimesRomanBoldItalic;
-    else if (isBold) standardName = StandardFonts.TimesRomanBold;
-    else if (isItalic) standardName = StandardFonts.TimesRomanItalic;
-    else standardName = StandardFonts.TimesRoman;
-  } else {
-    // Courier
-    if (isBold && isItalic) standardName = StandardFonts.CourierBoldOblique;
-    else if (isBold) standardName = StandardFonts.CourierBold;
-    else if (isItalic) standardName = StandardFonts.CourierOblique;
-    else standardName = StandardFonts.Courier;
+    if (fontType === 'Helvetica') {
+      if (isBold && isItalic) standardName = StandardFonts.HelveticaBoldOblique;
+      else if (isBold) standardName = StandardFonts.HelveticaBold;
+      else if (isItalic) standardName = StandardFonts.HelveticaOblique;
+      else standardName = StandardFonts.Helvetica;
+    } else if (fontType === 'Times-Roman') {
+      if (isBold && isItalic) standardName = StandardFonts.TimesRomanBoldItalic;
+      else if (isBold) standardName = StandardFonts.TimesRomanBold;
+      else if (isItalic) standardName = StandardFonts.TimesRomanItalic;
+      else standardName = StandardFonts.TimesRoman;
+    } else {
+      if (isBold && isItalic) standardName = StandardFonts.CourierBoldOblique;
+      else if (isBold) standardName = StandardFonts.CourierBold;
+      else if (isItalic) standardName = StandardFonts.CourierOblique;
+      else standardName = StandardFonts.Courier;
+    }
+
+    return await pdfDoc.embedFont(standardName);
   }
 
-  return await pdfDoc.embedFont(standardName);
+  const fontUrls = GOOGLE_FONTS_URLS[fontType];
+  if (!fontUrls) {
+    return await pdfDoc.embedFont(StandardFonts.Helvetica);
+  }
+
+  let url = fontUrls.regular;
+  if (isBold && isItalic) url = fontUrls.boldItalic;
+  else if (isBold) url = fontUrls.bold;
+  else if (isItalic) url = fontUrls.italic;
+
+  const cacheKey = `${fontType}|${isBold}|${isItalic}`;
+  let bytes = fontBytesCache.get(cacheKey);
+  if (!bytes) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch font from ${url}`);
+    }
+    bytes = await response.arrayBuffer();
+    fontBytesCache.set(cacheKey, bytes);
+  }
+
+  pdfDoc.registerFontkit(fontkit);
+  return await pdfDoc.embedFont(bytes);
 }
 
 /**
@@ -113,7 +180,7 @@ async function generateSingleMergedPDF(
       const [fontType, isBoldStr, isItalicStr] = key.split('|');
       const font = await getEmbeddedFont(
         pdfDoc,
-        fontType as 'Helvetica' | 'Times-Roman' | 'Courier',
+        fontType,
         isBoldStr === 'true',
         isItalicStr === 'true'
       );

@@ -9,6 +9,12 @@ import { CanvasToolbar } from '@/components/app/CanvasToolbar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function fontFamilyFor(font: PlacedField['font']): string {
+  if (font === 'Arimo') return 'Arimo, Arial, sans-serif';
+  if (font === 'Carlito') return 'Carlito, Calibri, sans-serif';
+  if (font === 'EB Garamond') return '"EB Garamond", Garamond, serif';
+  if (font === 'Lora') return 'Lora, Georgia, serif';
+  if (font === 'Open Sans') return '"Open Sans", Tahoma, Verdana, sans-serif';
+  if (font === 'Open Sans Condensed') return '"Open Sans Condensed", "Open Sans", Tahoma, Verdana, sans-serif';
   if (font === 'Courier') return '"Courier New", Courier, monospace';
   if (font === 'Times-Roman') return '"Times New Roman", Times, Georgia, serif';
   return 'Helvetica, "Helvetica Neue", Arial, sans-serif';
@@ -26,13 +32,18 @@ function getFieldStyle(
   };
 
   const align = field.align ?? 'left';
+  const fontSizeVal = isPreviewMode
+    ? Math.max(8, field.fontSize * 0.85 * zoom)
+    : Math.max(8, field.fontSize * 0.75 * zoom);
+  const heightVal = fontSizeVal * 1.5;
 
   if (isPreviewMode) {
     return {
       ...base,
       color: field.color,
       fontFamily: fontFamilyFor(field.font),
-      fontSize: `${Math.max(8, field.fontSize * zoom)}px`,
+      fontSize: `${fontSizeVal}px`,
+      height: `${heightVal}px`,
       fontWeight: field.isBold ? 'bold' : 'normal',
       fontStyle: field.isItalic ? 'italic' : 'normal',
       textAlign: align,
@@ -42,7 +53,8 @@ function getFieldStyle(
 
   return {
     ...base,
-    fontSize: `${Math.max(8, field.fontSize * 0.75 * zoom)}px`,
+    fontSize: `${fontSizeVal}px`,
+    height: `${heightVal}px`,
     fontFamily: fontFamilyFor(field.font),
     fontWeight: field.isBold ? 'bold' : 'normal',
     fontStyle: field.isItalic ? 'italic' : 'normal',
