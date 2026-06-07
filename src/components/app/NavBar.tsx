@@ -1,4 +1,4 @@
-import { FileText, Download, Info, Sun, Moon, Keyboard } from 'lucide-react';
+import { FileText, Download, Info, Sun, Moon, Keyboard, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -10,6 +10,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { useState } from 'react';
+import { DevsDialog } from '@/components/app/DevsDialog';
 
 interface NavBarProps {
   isDarkMode: boolean;
@@ -83,6 +84,7 @@ export function NavBar({
 }: NavBarProps) {
   const [infoOpen, setInfoOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [devsOpen, setDevsOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md">
@@ -218,8 +220,21 @@ export function NavBar({
               </p>
             </div>
           </div>
+          <div className="border-t border-border pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => { setInfoOpen(false); setDevsOpen(true); }}
+            >
+              <Users className="size-3.5" />
+              Meet the Developers
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
+
+      <DevsDialog open={devsOpen} onOpenChange={setDevsOpen} />
 
       {/* Keyboard Shortcuts Dialog */}
       <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
