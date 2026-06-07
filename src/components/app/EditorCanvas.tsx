@@ -32,13 +32,18 @@ function getFieldStyle(
   };
 
   const align = field.align ?? 'left';
+  const fontSizeVal = isPreviewMode
+    ? Math.max(8, field.fontSize * zoom)
+    : Math.max(8, field.fontSize * 0.75 * zoom);
+  const heightVal = fontSizeVal * 1.5;
 
   if (isPreviewMode) {
     return {
       ...base,
       color: field.color,
       fontFamily: fontFamilyFor(field.font),
-      fontSize: `${Math.max(8, field.fontSize * zoom)}px`,
+      fontSize: `${fontSizeVal}px`,
+      height: `${heightVal}px`,
       fontWeight: field.isBold ? 'bold' : 'normal',
       fontStyle: field.isItalic ? 'italic' : 'normal',
       textAlign: align,
@@ -48,7 +53,8 @@ function getFieldStyle(
 
   return {
     ...base,
-    fontSize: `${Math.max(8, field.fontSize * 0.75 * zoom)}px`,
+    fontSize: `${fontSizeVal}px`,
+    height: `${heightVal}px`,
     fontFamily: fontFamilyFor(field.font),
     fontWeight: field.isBold ? 'bold' : 'normal',
     fontStyle: field.isItalic ? 'italic' : 'normal',
