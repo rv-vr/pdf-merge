@@ -11,6 +11,7 @@ import { usePdf } from '@/hooks/usePdf';
 import { useCsv } from '@/hooks/useCsv';
 import { useFieldEditor } from '@/hooks/useFieldEditor';
 import { useExport } from '@/hooks/useExport';
+import { Monitor } from 'lucide-react';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
@@ -41,6 +42,13 @@ export default function App() {
 
   const selectedField = fields.placedFields.find((f) => f.id === fields.selectedFieldId);
 
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
   return (
     <TooltipProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -61,15 +69,30 @@ export default function App() {
         />
 
         {view === 'upload' ? (
-          <UploadScreen
-            pdfFile={pdf.pdfFile}
-            csvFileName={csv.csvFileName}
-            csvRows={csv.csvRows}
-            csvHeaders={csv.csvHeaders}
-            onPdfUpload={handlePdfUpload}
-            onCsvUpload={csv.handleCsvUpload}
-            onContinue={() => setView('editor')}
-          />
+          <div className="relative flex flex-1 flex-col overflow-hidden">
+            <div className={`flex flex-1 flex-col${isMobile ? ' pointer-events-none select-none opacity-30 blur-[2px]' : ''}`}>
+              <UploadScreen
+                pdfFile={pdf.pdfFile}
+                csvFileName={csv.csvFileName}
+                csvRows={csv.csvRows}
+                csvHeaders={csv.csvHeaders}
+                onPdfUpload={handlePdfUpload}
+                onCsvUpload={csv.handleCsvUpload}
+                onContinue={() => setView('editor')}
+              />
+            </div>
+            {isMobile && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8 text-center">
+                <Monitor className="h-12 w-12 text-foreground" />
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-xl font-semibold tracking-tight">Desktop Required</h2>
+                  <p className="max-w-xs text-sm text-muted-foreground">
+                    PDF Data Merger needs a larger screen. Open on a desktop or laptop for the full experience.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="flex min-h-0 flex-1 overflow-hidden">
             <FieldsSidebar
