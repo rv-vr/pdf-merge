@@ -91,7 +91,7 @@ export function NavBar({
       {/* Left: Logo + file info */}
       <div className="flex items-center gap-3">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <img src="/favicon.svg" alt="PDF Merger" className="size-5" />
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="PDF Merger" className="size-5" />
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-bold leading-tight tracking-tight">PDF Merge</span>
