@@ -167,7 +167,7 @@ async function getEmbeddedFont(
   }
 
   pdfDoc.registerFontkit(fontkit);
-  return await pdfDoc.embedFont(bytes);
+  return await pdfDoc.embedFont(bytes, { subset: true });
 }
 
 /**
@@ -179,6 +179,18 @@ async function generateSingleMergedPDF(
   fields: PlacedField[]
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(templateBytes.slice(0));
+  
+  // Flatten template form fields if they exist to save space and remove interactive widgets
+  try {
+    const form = pdfDoc.getForm();
+    if (form && form.getFields().length > 0) {
+      form.updateFieldAppearances();
+      form.flatten();
+    }
+  } catch (e) {
+    console.warn('Failed to flatten template form fields:', e);
+  }
+
   const pages = pdfDoc.getPages();
 
   // Pre-load all unique font combinations in parallel — avoids await inside the field loop
@@ -261,6 +273,7 @@ async function generateSingleMergedPDF(
 /**
  * Combines all CSV rows into a single PDF document.
  * Each CSV row generates a copy of all the template pages filled with its data.
+ * Optimized to copy all pages in a single call to share resources, and embeds fonts once.
  */
 export async function generateCombinedPDF(
   templateBytes: ArrayBuffer,
@@ -269,31 +282,137 @@ export async function generateCombinedPDF(
   onProgress?: (current: number, total: number) => void
 ): Promise<Uint8Array> {
   const finalDoc = await PDFDocument.create();
+  const templateDoc = await PDFDocument.load(templateBytes.slice(0));
+  
+  // Flatten template form fields if they exist to save space and remove interactive widgets
+  try {
+    const templateForm = templateDoc.getForm();
+    if (templateForm && templateForm.getFields().length > 0) {
+      templateForm.updateFieldAppearances();
+      templateForm.flatten();
+    }
+  } catch (e) {
+    console.warn('Failed to flatten template form fields:', e);
+  }
+
+  const templatePageCount = templateDoc.getPageCount();
   const total = rows.length;
 
+  // Pre-load all unique font combinations in parallel on finalDoc — embeds them exactly once
+  const uniqueFontKeys = [...new Set(fields.map((f) => `${f.font}|${f.isBold}|${f.isItalic}`))];
+  const fontEntries = await Promise.all(
+    uniqueFontKeys.map(async (key) => {
+      const [fontType, isBoldStr, isItalicStr] = key.split('|');
+      const font = await getEmbeddedFont(
+        finalDoc,
+        fontType,
+        isBoldStr === 'true',
+        isItalicStr === 'true'
+      );
+      return [key, font] as const;
+    })
+  );
+  const fontCache = new Map(fontEntries);
+
+  // Construct a repeated indices array to copy all pages in a single call.
+  // This allows pdf-lib to share duplicated background images and resources across all copied pages.
+  const repeatedIndices: number[] = [];
+  for (let i = 0; i < total; i++) {
+    for (let p = 0; p < templatePageCount; p++) {
+      repeatedIndices.push(p);
+    }
+  }
+
+  const copiedPages = await finalDoc.copyPages(templateDoc, repeatedIndices);
+  copiedPages.forEach((page) => {
+    finalDoc.addPage(page);
+  });
+
+  const finalPages = finalDoc.getPages();
+
+  // Draw the text fields for each row
   for (let i = 0; i < total; i++) {
     const row = rows[i];
-    
-    // Create a temporary single PDF for this row
-    const singlePdfBytes = await generateSingleMergedPDF(templateBytes, row, fields);
-    const tempDoc = await PDFDocument.load(singlePdfBytes);
-    
-    // Copy all pages from the temp document to the final document
-    const pageIndices = Array.from({ length: tempDoc.getPageCount() }, (_, index) => index);
-    const copiedPages = await finalDoc.copyPages(tempDoc, pageIndices);
-    
-    copiedPages.forEach((page) => {
-      finalDoc.addPage(page);
-    });
+    const pageOffset = i * templatePageCount;
+
+    for (const field of fields) {
+      const relativePageIndex = field.page - 1;
+      const targetPageIndex = pageOffset + relativePageIndex;
+      if (targetPageIndex < 0 || targetPageIndex >= finalPages.length) continue;
+
+      const page = finalPages[targetPageIndex];
+      const { width: pdfWidth, height: pdfHeight } = page.getSize();
+
+      // Resolve the value from the CSV row, fallback to field placeholder name
+      const textValue = row[field.fieldName] !== undefined ? row[field.fieldName] : `{{${field.fieldName}}}`;
+
+      const font = fontCache.get(`${field.font}|${field.isBold}|${field.isItalic}`)!;
+
+      // Translate coordinate (canvas top-left percentage -> PDF bottom-left points)
+      let { x, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
+
+      // Apply text alignment within the field box
+      const fieldWidthPts = (field.width / 100) * pdfWidth;
+      const align = field.align ?? 'left';
+      if (align !== 'left') {
+        const textWidth = font.widthOfTextAtSize(textValue, field.fontSize);
+        if (align === 'center') x += (fieldWidthPts - textWidth) / 2;
+        else if (align === 'right') x += fieldWidthPts - textWidth;
+      }
+
+      const { r, g, b } = hexToRgb(field.color);
+
+      // Bounding box for clipping path
+      const clipX = x;
+      const clipWidth = (field.width / 100) * pdfWidth;
+      const clipHeight = field.fontSize * 1.2;
+      // Bounding box Y-bottom (PDF origin is bottom-left)
+      const clipY = pdfHeight - (field.y / 100) * pdfHeight - clipHeight;
+
+      // Apply clipping path to restrict text rendering inside the box
+      page.pushOperators(
+        pushGraphicsState(),
+        moveTo(clipX, clipY),
+        lineTo(clipX, clipY + clipHeight),
+        lineTo(clipX + clipWidth, clipY + clipHeight),
+        lineTo(clipX + clipWidth, clipY),
+        closePath(),
+        clip(),
+        endPath()
+      );
+
+      // Draw the text
+      page.drawText(textValue, {
+        x,
+        y,
+        size: field.fontSize,
+        font,
+        color: rgb(r, g, b),
+      });
+
+      // Restore graphics state to disable clipping for next page operations
+      page.pushOperators(popGraphicsState());
+    }
 
     if (onProgress) {
       onProgress(i + 1, total);
     }
-    
+
     // Yield execution slightly for UI responsiveness in large jobs
     if (i % 5 === 0) {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
+  }
+
+  // Double-check and flatten form fields in the final combined doc as a failsafe
+  try {
+    const finalForm = finalDoc.getForm();
+    if (finalForm && finalForm.getFields().length > 0) {
+      finalForm.updateFieldAppearances();
+      finalForm.flatten();
+    }
+  } catch (e) {
+    console.warn('Failed to flatten final document form fields:', e);
   }
 
   return await finalDoc.save();
