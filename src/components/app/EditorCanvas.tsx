@@ -15,6 +15,7 @@ function fontFamilyFor(font: PlacedField['font']): string {
   if (font === 'Lora') return 'Lora, Georgia, serif';
   if (font === 'Open Sans') return '"Open Sans", Tahoma, Verdana, sans-serif';
   if (font === 'Open Sans Condensed') return '"Open Sans Condensed", "Open Sans", Tahoma, Verdana, sans-serif';
+  if (font === 'Poppins') return 'Poppins, sans-serif';
   if (font === 'Courier') return '"Courier New", Courier, monospace';
   if (font === 'Times-Roman') return '"Times New Roman", Times, Georgia, serif';
   return 'Helvetica, "Helvetica Neue", Arial, sans-serif';

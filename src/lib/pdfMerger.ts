@@ -19,7 +19,7 @@ export interface PlacedField {
   x: number; // percentage from left of canvas (0 - 100)
   y: number; // percentage from top of canvas (0 - 100)
   page: number; // page number (1-indexed)
-  font: 'Helvetica' | 'Times-Roman' | 'Courier' | 'Arimo' | 'Carlito' | 'EB Garamond' | 'Lora' | 'Open Sans' | 'Open Sans Condensed';
+  font: 'Helvetica' | 'Times-Roman' | 'Courier' | 'Arimo' | 'Carlito' | 'EB Garamond' | 'Lora' | 'Open Sans' | 'Open Sans Condensed' | 'Poppins';
   fontSize: number;
   color: string; // hex color (e.g. #000000)
   isBold: boolean;
@@ -105,6 +105,12 @@ const GOOGLE_FONTS_URLS: Record<string, { regular: string; bold: string; italic:
     bold: `${base}fonts/Open_Sans/OpenSans_Condensed-Bold.ttf`,
     italic: `${base}fonts/Open_Sans/OpenSans_Condensed-Italic.ttf`,
     boldItalic: `${base}fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf`
+  },
+  'Poppins': {
+    regular: `${base}fonts/Poppins/Poppins-Regular.ttf`,
+    bold: `${base}fonts/Poppins/Poppins-Bold.ttf`,
+    italic: `${base}fonts/Poppins/Poppins-Italic.ttf`,
+    boldItalic: `${base}fonts/Poppins/Poppins-BoldItalic.ttf`
   }
 };
 

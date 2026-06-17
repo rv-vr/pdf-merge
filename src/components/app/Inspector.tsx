@@ -209,6 +209,12 @@ export function Inspector({
                       <span className="text-[9px] text-muted-foreground leading-none">equivalent to Tahoma / Verdana Condensed</span>
                     </div>
                   </SelectItem>
+                  <SelectItem value="Poppins">
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-medium">Poppins</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">equivalent to Geometric Sans</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
