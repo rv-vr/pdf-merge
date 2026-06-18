@@ -33,9 +33,7 @@ function getFieldStyle(
   };
 
   const align = field.align ?? 'left';
-  const fontSizeVal = isPreviewMode
-    ? Math.max(8, field.fontSize * 0.85 * zoom)
-    : Math.max(8, field.fontSize * 0.75 * zoom);
+  const fontSizeVal = Math.max(8, (field.fontSize ?? 12) * zoom);
   const heightVal = fontSizeVal * 1.5;
 
   if (isPreviewMode) {
