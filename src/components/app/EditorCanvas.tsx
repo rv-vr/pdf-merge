@@ -118,7 +118,7 @@ interface EditorCanvasProps {
   currentPage: number;
   pdfDimensions: { width: number; height: number };
   placedFields: PlacedField[];
-  selectedFieldId: string | null;
+  selectedFieldIds: string[];
   isPreviewMode: boolean;
   previewRowIndex: number;
   csvRows: Record<string, string>[];
@@ -130,6 +130,7 @@ interface EditorCanvasProps {
   onTogglePreview: () => void;
   onPreviewRowChange: (index: number) => void;
   onSelectField: (id: string | null) => void;
+  onSelectFields: (ids: string[]) => void;
   onClearAllFields: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -148,7 +149,7 @@ export function EditorCanvas({
   currentPage,
   pdfDimensions,
   placedFields,
-  selectedFieldId,
+  selectedFieldIds,
   isPreviewMode,
   previewRowIndex,
   csvRows,
@@ -160,6 +161,7 @@ export function EditorCanvas({
   onTogglePreview,
   onPreviewRowChange,
   onSelectField,
+  onSelectFields,
   onClearAllFields,
   onUndo,
   onRedo,
@@ -174,6 +176,83 @@ export function EditorCanvas({
   const memoizedFile = React.useMemo(() => {
     return pdfBytes ? pdfBytes.slice(0) : null;
   }, [pdfBytes]);
+
+  // Marquee selection state
+  const [marqueeRect, setMarqueeRect] = React.useState<{left: number; top: number; width: number; height: number} | null>(null);
+  const marqueeStartRef = React.useRef<{x: number; y: number} | null>(null);
+
+  const getContainerCoords = React.useCallback((clientX: number, clientY: number) => {
+    const el = containerRef.current;
+    if (!el) return { x: 0, y: 0 };
+    const rect = el.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }, [containerRef]);
+
+  const handleWorkspaceMouseDown = React.useCallback((e: React.MouseEvent) => {
+    if (isPreviewMode) return;
+    // Only start marquee on left click in the workspace (not on a field)
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    // If clicking a field or its children, don't start marquee
+    if (target.closest('[role="button"]')) return;
+    const coords = getContainerCoords(e.clientX, e.clientY);
+    marqueeStartRef.current = coords;
+    setMarqueeRect({ left: coords.x, top: coords.y, width: 0, height: 0 });
+    onSelectField(null);
+  }, [isPreviewMode, getContainerCoords, onSelectField]);
+
+  React.useEffect(() => {
+    if (!marqueeRect) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const coords = getContainerCoords(e.clientX, e.clientY);
+      const start = marqueeStartRef.current;
+      if (!start) return;
+      setMarqueeRect({
+        left: Math.min(start.x, coords.x),
+        top: Math.min(start.y, coords.y),
+        width: Math.abs(coords.x - start.x),
+        height: Math.abs(coords.y - start.y),
+      });
+    };
+    const handleMouseUp = (e: MouseEvent) => {
+      const start = marqueeStartRef.current;
+      if (!start) { setMarqueeRect(null); return; }
+      const end = getContainerCoords(e.clientX, e.clientY);
+      const selLeft = Math.min(start.x, end.x);
+      const selTop = Math.min(start.y, end.y);
+      const selRight = Math.max(start.x, end.x);
+      const selBottom = Math.max(start.y, end.y);
+      const container = containerRef.current;
+      if (container) {
+        const cw = container.offsetWidth;
+        const ch = container.offsetHeight;
+        // Select ALL fields intersecting the selection rect
+        const hitIds: string[] = [];
+        for (const f of placedFields) {
+          if (f.page !== currentPage) continue;
+          if (f.visible === false) continue;
+          const fontSizeVal = Math.max(8, (f.fontSize ?? 12) * zoom);
+          const fHeight = fontSizeVal * 1.5;
+          const fLeft = (f.x / 100) * cw;
+          const fTop = (f.y / 100) * ch;
+          const fRight = fLeft + (f.width / 100) * cw;
+          const fBottom = fTop + fHeight;
+          if (fLeft < selRight && fRight > selLeft && fTop < selBottom && fBottom > selTop) {
+            hitIds.push(f.id);
+          }
+        }
+        if (hitIds.length > 0) onSelectFields(hitIds);
+      }
+      marqueeStartRef.current = null;
+      setMarqueeRect(null);
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [marqueeRect, getContainerCoords, containerRef, placedFields, currentPage, onSelectField, onSelectFields, zoom]);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -209,7 +288,7 @@ export function EditorCanvas({
             style={{
               width: pdfDimensions.width ? `${pdfDimensions.width}px` : 'auto',
             }}
-            onMouseDown={(e) => e.stopPropagation()}
+            onMouseDown={handleWorkspaceMouseDown}
           >
             {/* Rendered PDF canvas using react-pdf */}
             <Document
@@ -238,12 +317,25 @@ export function EditorCanvas({
               />
             )}
 
+            {/* Marquee selection overlay */}
+            {marqueeRect && (
+              <div
+                className="pointer-events-none absolute z-30 rounded border-2 border-blue-600/80 bg-blue-600/20"
+                style={{
+                  left: marqueeRect.left,
+                  top: marqueeRect.top,
+                  width: marqueeRect.width,
+                  height: marqueeRect.height,
+                }}
+              />
+            )}
+
             {/* Field overlay layer */}
             <div className="absolute inset-0 z-10 overflow-visible">
               {placedFields.flatMap((field) => {
                 if (field.page !== currentPage) return [];
                 if (field.visible === false && !isPreviewMode) return [];
-                const isSelected = field.id === selectedFieldId;
+                const isSelected = selectedFieldIds.includes(field.id);
                 const displayVal =
                   isPreviewMode && csvRows[previewRowIndex]
                     ? csvRows[previewRowIndex][field.fieldName] || ''
@@ -251,7 +343,7 @@ export function EditorCanvas({
 
                 const align = field.align ?? 'left';
 
-                return [(
+                const fieldEl = (
                   <div
                     key={field.id}
                     role="button"
@@ -293,7 +385,7 @@ export function EditorCanvas({
                       </span>
                     </div>
 
-                    {/* Resize grip */}
+                    {/* Width resize grip (right edge) */}
                     {!isPreviewMode && (
                       <button
                         type="button"
@@ -319,7 +411,9 @@ export function EditorCanvas({
                       </button>
                     )}
                   </div>
-                )];
+                );
+
+                return [fieldEl];
               })}
             </div>
           </div>

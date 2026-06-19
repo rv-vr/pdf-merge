@@ -27,12 +27,14 @@ interface FieldsSidebarProps {
   csvRows: Record<string, string>[];
   placedFields: PlacedField[];
   selectedFieldId: string | null;
+  selectedFieldIds: string[];
   onAddField: (header: string) => void;
   onRemoveField: (id: string) => void;
   onSelectField: (id: string | null) => void;
   /** displayOrderIds: topmost-first (index 0 = rendered on top of PDF) */
   onReorderFields: (displayOrderIds: string[]) => void;
   onToggleVisibility: (id: string) => void;
+  onToggleFieldSelection: (id: string) => void;
 }
 
 export function FieldsSidebar({
@@ -41,11 +43,13 @@ export function FieldsSidebar({
   csvRows,
   placedFields,
   selectedFieldId,
+  selectedFieldIds,
   onAddField,
   onRemoveField,
   onSelectField,
   onReorderFields,
   onToggleVisibility,
+  onToggleFieldSelection,
 }: FieldsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
@@ -208,6 +212,7 @@ export function FieldsSidebar({
                         f.id === selectedFieldId && !isDragging && 'bg-accent ring-1 ring-ring/20',
                         isDragging && 'opacity-40 ring-1 ring-dashed ring-ring/50 bg-accent/50',
                         !isDragging && 'hover:bg-accent',
+                        !isDragging && selectedFieldIds.includes(f.id) && 'bg-accent/60',
                       )}
                     >
                       <button
@@ -223,7 +228,14 @@ export function FieldsSidebar({
                       </button>
                       <button
                         type="button"
-                        onClick={() => !dragId && onSelectField(f.id)}
+                        onClick={(e) => {
+                          if (dragId) return;
+                          if (e.ctrlKey || e.metaKey) {
+                            onToggleFieldSelection(f.id);
+                          } else {
+                            onSelectField(f.id);
+                          }
+                        }}
                         className="flex min-w-0 flex-1 items-center gap-2 text-left"
                       >
                         <Tag className="size-3.5 shrink-0 text-muted-foreground" />

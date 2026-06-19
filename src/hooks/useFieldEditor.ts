@@ -24,7 +24,9 @@ const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean } = {
 
 export function useFieldEditor(currentPage: number) {
   const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
-  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([]);
+  const selectedFieldId = selectedFieldIds.length === 1 ? selectedFieldIds[0] : null;
+  const setSelectedFieldId = (id: string | null) => setSelectedFieldIds(id ? [id] : []);
   const [draggingFieldId, setDraggingFieldId] = useState<string | null>(null);
   const [resizingFieldId, setResizingFieldId] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -38,20 +40,20 @@ export function useFieldEditor(currentPage: number) {
   const dragStartOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const resizeStartWidth = useRef<number>(0);
   const resizeStartPointerX = useRef<number>(0);
-  const copiedFieldRef = useRef<Partial<PlacedField> | null>(null);
+  const copiedFieldsRef = useRef<Partial<PlacedField>[]>([]);
+  const copiedStyleRef = useRef<Partial<PlacedField> | null>(null);
+  const multiDragOrigins = useRef<{ id: string; x: number; y: number }[]>([]);
 
   // Ref mirrors — kept current so event handlers avoid stale closures.
-  // Writing to refs inside effects is fine (no cascading setState).
   const placedFieldsRef = useRef(placedFields);
-  const selectedFieldIdRef = useRef(selectedFieldId);
-  // Tracks the last non-null selectedFieldId so new fields can inherit its properties.
+  const selectedFieldIdsRef = useRef<string[]>([]);
   const lastSelectedFieldIdRef = useRef<string | null>(null);
 
   useEffect(() => { placedFieldsRef.current = placedFields; }, [placedFields]);
   useEffect(() => {
-    selectedFieldIdRef.current = selectedFieldId;
-    if (selectedFieldId !== null) lastSelectedFieldIdRef.current = selectedFieldId;
-  }, [selectedFieldId]);
+    selectedFieldIdsRef.current = selectedFieldIds;
+    if (selectedFieldIds.length === 1) lastSelectedFieldIdRef.current = selectedFieldIds[0];
+  }, [selectedFieldIds]);
 
   const canUndo = undoStack.length > 0;
   const canRedo = redoStack.length > 0;
@@ -67,7 +69,7 @@ export function useFieldEditor(currentPage: number) {
       const restored = prev[prev.length - 1];
       setRedoStack((r) => [...r, [...placedFieldsRef.current]]);
       setPlacedFields(restored);
-      setSelectedFieldId(null);
+      setSelectedFieldIds([]);
       return prev.slice(0, -1);
     });
   }, []);
@@ -81,6 +83,31 @@ export function useFieldEditor(currentPage: number) {
       return prev.slice(0, -1);
     });
   }, []);
+
+  const copyStyle = () => {
+    const ids = selectedFieldIdsRef.current;
+    if (ids.length === 0) return;
+    const src = placedFieldsRef.current.find((f) => f.id === ids[ids.length - 1]);
+    if (src) {
+      copiedStyleRef.current = {
+        font: src.font,
+        fontSize: src.fontSize,
+        color: src.color,
+        isBold: src.isBold,
+        isItalic: src.isItalic,
+        align: src.align ?? 'left',
+      };
+    }
+  };
+
+  const pasteStyle = () => {
+    const ids = selectedFieldIdsRef.current;
+    if (ids.length === 0 || !copiedStyleRef.current) return;
+    snapshot();
+    setPlacedFields((prev) =>
+      prev.map((f) => (ids.includes(f.id) ? { ...f, ...copiedStyleRef.current } : f))
+    );
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -107,64 +134,91 @@ export function useFieldEditor(currentPage: number) {
         }
       }
 
-      // Escape — deselect field (global)
-      if (e.key === 'Escape' && selectedFieldIdRef.current) {
+      // Escape — deselect all (global)
+      if (e.key === 'Escape' && selectedFieldIdsRef.current.length > 0) {
         e.preventDefault();
-        setSelectedFieldId(null);
+        setSelectedFieldIds([]);
         return;
       }
 
       // Copy / Paste — no field selected required
       if (ctrl && !isInputFocused) {
-        if (e.key === 'c' && selectedFieldIdRef.current) {
+        // Copy field(s) (Ctrl+C) — copy all selected
+        if (e.key === 'c' && !e.shiftKey && selectedFieldIdsRef.current.length > 0) {
           e.preventDefault();
-          const src = placedFieldsRef.current.find((f) => f.id === selectedFieldIdRef.current);
-          if (src) copiedFieldRef.current = { ...src };
+          const ids = selectedFieldIdsRef.current;
+          const selFields = placedFieldsRef.current.filter((f) => ids.includes(f.id));
+          copiedFieldsRef.current = selFields.map((f) => ({
+            fieldName: f.fieldName,
+            x: f.x,
+            y: f.y,
+            page: f.page,
+            font: f.font,
+            fontSize: f.fontSize,
+            color: f.color,
+            isBold: f.isBold,
+            isItalic: f.isItalic,
+            width: f.width,
+            align: f.align,
+            visible: f.visible,
+          }));
           return;
         }
-        if (e.key === 'v' && copiedFieldRef.current) {
+        // Paste field(s) (Ctrl+V)
+        if (e.key === 'v' && !e.shiftKey && copiedFieldsRef.current.length > 0) {
           e.preventDefault();
           snapshot();
-          const src = copiedFieldRef.current;
-          const newField: PlacedField = {
+          const newFields: PlacedField[] = copiedFieldsRef.current.map((src, i) => ({
             ...src,
-            id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            x: Math.min(90, (src.x ?? 40) + 2.5),
-            y: Math.min(90, (src.y ?? 45) + 2.5),
+            id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${i}`,
+            x: Math.min(90, (src.x ?? 40) + 2.5 + i * 1.5),
+            y: Math.min(90, (src.y ?? 45) + 2.5 + i * 1.5),
             page: currentPage,
-          } as PlacedField;
-          setPlacedFields((prev) => [...prev, newField]);
-          setSelectedFieldId(newField.id);
+          })) as PlacedField[];
+          setPlacedFields((prev) => [...prev, ...newFields]);
+          setSelectedFieldIds(newFields.map((f) => f.id));
+          return;
+        }
+        // Select all (Ctrl+A) — selects all visible fields on current page
+        if (e.key === 'a') {
+          e.preventDefault();
+          const pageIds = placedFieldsRef.current
+            .filter((f) => f.page === currentPage && f.visible !== false)
+            .map((f) => f.id);
+          if (pageIds.length > 0) setSelectedFieldIds(pageIds);
           return;
         }
       }
 
-      const id = selectedFieldIdRef.current;
-      if (!id || isInputFocused) return;
+      const ids = selectedFieldIdsRef.current;
+      if (ids.length === 0 || isInputFocused) return;
+
+      // Use primary (= last selected) for single-field operations
+      const primaryId = ids[ids.length - 1];
 
       // Tab / Shift+Tab — cycle through fields on current page
       if (e.key === 'Tab') {
         e.preventDefault();
         const pageFields = placedFieldsRef.current.filter((f) => f.page === currentPage);
         if (pageFields.length < 2) return;
-        const idx = pageFields.findIndex((f) => f.id === id);
+        const idx = pageFields.findIndex((f) => f.id === primaryId);
         if (e.shiftKey) {
           const prev = pageFields[(idx - 1 + pageFields.length) % pageFields.length];
-          setSelectedFieldId(prev.id);
+          setSelectedFieldIds([prev.id]);
         } else {
           const next = pageFields[(idx + 1) % pageFields.length];
-          setSelectedFieldId(next.id);
+          setSelectedFieldIds([next.id]);
         }
         return;
       }
 
       if (ctrl) {
-        // Bold / Italic
+        // Bold / Italic — apply to all selected
         if (e.key === 'b') {
           e.preventDefault();
           snapshot();
           setPlacedFields((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, isBold: !f.isBold } : f))
+            prev.map((f) => (ids.includes(f.id) ? { ...f, isBold: !f.isBold } : f))
           );
           return;
         }
@@ -172,7 +226,7 @@ export function useFieldEditor(currentPage: number) {
           e.preventDefault();
           snapshot();
           setPlacedFields((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, isItalic: !f.isItalic } : f))
+            prev.map((f) => (ids.includes(f.id) ? { ...f, isItalic: !f.isItalic } : f))
           );
           return;
         }
@@ -182,7 +236,7 @@ export function useFieldEditor(currentPage: number) {
             e.preventDefault();
             snapshot();
             setPlacedFields((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, align: 'left' } : f))
+              prev.map((f) => (ids.includes(f.id) ? { ...f, align: 'left' } : f))
             );
             return;
           }
@@ -190,7 +244,7 @@ export function useFieldEditor(currentPage: number) {
             e.preventDefault();
             snapshot();
             setPlacedFields((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, align: 'center' } : f))
+              prev.map((f) => (ids.includes(f.id) ? { ...f, align: 'center' } : f))
             );
             return;
           }
@@ -198,71 +252,49 @@ export function useFieldEditor(currentPage: number) {
             e.preventDefault();
             snapshot();
             setPlacedFields((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, align: 'right' } : f))
+              prev.map((f) => (ids.includes(f.id) ? { ...f, align: 'right' } : f))
             );
             return;
           }
         }
       }
 
-      // Layer reorder — ] / [ step one, Ctrl+] / Ctrl+[ jump to front/back
+      // Layer reorder — operate on primary field
       if (e.key === ']' || e.key === '[') {
         e.preventDefault();
-        snapshot();
-        if (ctrl) {
-          setPlacedFields((prev) => {
-            const field = prev.find((f) => f.id === id);
-            if (!field) return prev;
-            return e.key === ']'
-              ? [...prev.filter((f) => f.id !== id), field]
-              : [field, ...prev.filter((f) => f.id !== id)];
-          });
-        } else {
-          setPlacedFields((prev) => {
-            const idx = prev.findIndex((f) => f.id === id);
-            if (idx < 0) return prev;
-            const next = [...prev];
-            if (e.key === ']') {
-              if (idx === prev.length - 1) return prev;
-              [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
-            } else {
-              if (idx === 0) return prev;
-              [next[idx], next[idx - 1]] = [next[idx - 1], next[idx]];
-            }
-            return next;
-          });
+        const ids = selectedFieldIdsRef.current;
+        if (ids.length > 1) {
+          e.key === ']' ? moveSelectedToFront() : moveSelectedToBack();
+        } else if (ids.length === 1) {
+          e.key === ']' ? moveFieldForward(ids[0]) : moveFieldBackward(ids[0]);
         }
         return;
       }
 
-      // Arrow-key nudge (no ctrl)
+      // Arrow-key nudge (no ctrl) — move all selected
       if (!ctrl) {
         const step = e.shiftKey ? 2.0 : 0.5;
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
           e.preventDefault();
           snapshot();
-          if (e.key === 'ArrowLeft') {
-            setPlacedFields((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, x: Math.max(0, f.x - step) } : f))
-            );
-          } else if (e.key === 'ArrowRight') {
-            setPlacedFields((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, x: Math.min(100, f.x + step) } : f))
-            );
-          } else if (e.key === 'ArrowUp') {
-            setPlacedFields((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, y: Math.max(0, f.y - step) } : f))
-            );
-          } else if (e.key === 'ArrowDown') {
-            setPlacedFields((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, y: Math.min(100, f.y + step) } : f))
-            );
-          }
+          const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+          const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+          setPlacedFields((prev) =>
+            prev.map((f) =>
+              ids.includes(f.id)
+                ? {
+                    ...f,
+                    x: Math.max(0, Math.min(100, f.x + dx)),
+                    y: Math.max(0, Math.min(100, f.y + dy)),
+                  }
+                : f
+            )
+          );
         } else if (e.key === 'Delete' || e.key === 'Backspace') {
           e.preventDefault();
           snapshot();
-          setPlacedFields((prev) => prev.filter((f) => f.id !== id));
-          setSelectedFieldId(null);
+          setPlacedFields((prev) => prev.filter((f) => !ids.includes(f.id)));
+          setSelectedFieldIds([]);
         }
       }
     };
@@ -277,12 +309,33 @@ export function useFieldEditor(currentPage: number) {
       const container = containerRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
-      let xPercent = ((e.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
-      let yPercent = ((e.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
-      xPercent = Math.max(0, Math.min(100, xPercent));
-      yPercent = Math.max(0, Math.min(100, yPercent));
+      const origins = multiDragOrigins.current;
+      const draggedOrigin = origins.find((o) => o.id === draggingFieldId);
+      if (!draggedOrigin || origins.length === 0) {
+        // Fallback: single-field drag
+        let xPercent = ((e.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
+        let yPercent = ((e.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
+        xPercent = Math.max(0, Math.min(100, xPercent));
+        yPercent = Math.max(0, Math.min(100, yPercent));
+        setPlacedFields((prev) =>
+          prev.map((f) => (f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f))
+        );
+        return;
+      }
+      const toX = ((e.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
+      const toY = ((e.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
+      const deltaX = toX - draggedOrigin.x;
+      const deltaY = toY - draggedOrigin.y;
       setPlacedFields((prev) =>
-        prev.map((f) => (f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f))
+        prev.map((f) => {
+          const orig = origins.find((o) => o.id === f.id);
+          if (!orig) return f;
+          return {
+            ...f,
+            x: Math.max(0, Math.min(100, orig.x + deltaX)),
+            y: Math.max(0, Math.min(100, orig.y + deltaY)),
+          };
+        })
       );
     };
 
@@ -293,12 +346,32 @@ export function useFieldEditor(currentPage: number) {
       const touch = e.touches[0];
       if (!touch) return;
       const rect = container.getBoundingClientRect();
-      let xPercent = ((touch.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
-      let yPercent = ((touch.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
-      xPercent = Math.max(0, Math.min(100, xPercent));
-      yPercent = Math.max(0, Math.min(100, yPercent));
+      const origins = multiDragOrigins.current;
+      const draggedOrigin = origins.find((o) => o.id === draggingFieldId);
+      if (!draggedOrigin || origins.length === 0) {
+        let xPercent = ((touch.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
+        let yPercent = ((touch.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
+        xPercent = Math.max(0, Math.min(100, xPercent));
+        yPercent = Math.max(0, Math.min(100, yPercent));
+        setPlacedFields((prev) =>
+          prev.map((f) => (f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f))
+        );
+        return;
+      }
+      const toX = ((touch.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
+      const toY = ((touch.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
+      const deltaX = toX - draggedOrigin.x;
+      const deltaY = toY - draggedOrigin.y;
       setPlacedFields((prev) =>
-        prev.map((f) => (f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f))
+        prev.map((f) => {
+          const orig = origins.find((o) => o.id === f.id);
+          if (!orig) return f;
+          return {
+            ...f,
+            x: Math.max(0, Math.min(100, orig.x + deltaX)),
+            y: Math.max(0, Math.min(100, orig.y + deltaY)),
+          };
+        })
       );
     };
 
@@ -371,8 +444,9 @@ export function useFieldEditor(currentPage: number) {
   const addFieldToPage = (header: string) => {
     snapshot();
     // Look up properties from the currently selected field, or the last selected one, or fall back to defaults.
+    const primaryId = selectedFieldIdsRef.current[selectedFieldIdsRef.current.length - 1];
     const sourceField =
-      placedFieldsRef.current.find((f) => f.id === selectedFieldIdRef.current) ??
+      (primaryId ? placedFieldsRef.current.find((f) => f.id === primaryId) : undefined) ??
       placedFieldsRef.current.find((f) => f.id === lastSelectedFieldIdRef.current);
     const props: FieldProps = sourceField
       ? {
@@ -415,10 +489,10 @@ export function useFieldEditor(currentPage: number) {
   // (e.g. native color picker 'change') because it reads selectedFieldId from the ref,
   // not a stale closure.
   const updateSelectedField = useCallback((updates: Partial<PlacedField>) => {
-    const id = selectedFieldIdRef.current;
-    if (!id) return;
+    const ids = selectedFieldIdsRef.current;
+    if (ids.length === 0) return;
     setPlacedFields((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...updates } : f))
+      prev.map((f) => (ids.includes(f.id) ? { ...f, ...updates } : f))
     );
   }, []);
 
@@ -429,11 +503,11 @@ export function useFieldEditor(currentPage: number) {
 
   // Snapshot + update in one step — for discrete one-shot changes (font family, bold, italic, alignment).
   const updateAndCommitField = useCallback((updates: Partial<PlacedField>) => {
-    const id = selectedFieldIdRef.current;
-    if (!id) return;
+    const ids = selectedFieldIdsRef.current;
+    if (ids.length === 0) return;
     snapshot();
     setPlacedFields((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, ...updates } : f))
+      prev.map((f) => (ids.includes(f.id) ? { ...f, ...updates } : f))
     );
   }, [snapshot]);
 
@@ -450,21 +524,85 @@ export function useFieldEditor(currentPage: number) {
   };
 
   // Layer ordering — renders last = appears on top (both DOM and pdf-lib draw order)
-  const moveFieldToFront = (id: string) => {
+  // Single field: swap with neighbor (one step)
+  const moveFieldForward = (id: string) => {
     snapshot();
     setPlacedFields((prev) => {
-      const field = prev.find((f) => f.id === id);
-      if (!field) return prev;
-      return [...prev.filter((f) => f.id !== id), field];
+      const idx = prev.findIndex((f) => f.id === id);
+      if (idx < 0 || idx >= prev.length - 1) return prev;
+      const result = [...prev];
+      [result[idx], result[idx + 1]] = [result[idx + 1], result[idx]];
+      return result;
     });
   };
 
-  const moveFieldToBack = (id: string) => {
+  const moveFieldBackward = (id: string) => {
     snapshot();
     setPlacedFields((prev) => {
-      const field = prev.find((f) => f.id === id);
-      if (!field) return prev;
-      return [field, ...prev.filter((f) => f.id !== id)];
+      const idx = prev.findIndex((f) => f.id === id);
+      if (idx < 0 || idx <= 0) return prev;
+      const result = [...prev];
+      [result[idx], result[idx - 1]] = [result[idx - 1], result[idx]];
+      return result;
+    });
+  };
+
+  // Bulk: move all selected fields forward/backward by consolidating or swapping boundary
+  const moveSelectedToFront = (overrideIds?: string[]) => {
+    const ids = overrideIds ?? selectedFieldIdsRef.current;
+    if (ids.length === 0) return;
+    snapshot();
+    setPlacedFields((prev) => {
+      let minIdx = prev.length, maxIdx = -1;
+      for (let i = 0; i < prev.length; i++) {
+        if (ids.includes(prev[i].id)) { minIdx = Math.min(minIdx, i); maxIdx = Math.max(maxIdx, i); }
+      }
+      if (maxIdx < 0) return prev;
+
+      const selected = prev.filter((f) => ids.includes(f.id));
+      const before = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) < minIdx);
+      const between = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) > minIdx && prev.indexOf(f) < maxIdx);
+      const after = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) > maxIdx);
+
+      if (between.length > 0) {
+        return [...before, ...between, ...selected, ...after];
+      }
+
+      if (maxIdx >= prev.length - 1) return prev;
+      const aboveField = prev[maxIdx + 1];
+      const allOthers = [...before, ...between, ...after];
+      const swapIdx = allOthers.indexOf(aboveField);
+      if (swapIdx < 0) return prev;
+      return [...allOthers.slice(0, swapIdx + 1), ...selected, ...allOthers.slice(swapIdx + 1)];
+    });
+  };
+
+  const moveSelectedToBack = (overrideIds?: string[]) => {
+    const ids = overrideIds ?? selectedFieldIdsRef.current;
+    if (ids.length === 0) return;
+    snapshot();
+    setPlacedFields((prev) => {
+      let minIdx = prev.length, maxIdx = -1;
+      for (let i = 0; i < prev.length; i++) {
+        if (ids.includes(prev[i].id)) { minIdx = Math.min(minIdx, i); maxIdx = Math.max(maxIdx, i); }
+      }
+      if (maxIdx < 0) return prev;
+
+      const selected = prev.filter((f) => ids.includes(f.id));
+      const before = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) < minIdx);
+      const between = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) > minIdx && prev.indexOf(f) < maxIdx);
+      const after = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) > maxIdx);
+
+      if (between.length > 0) {
+        return [...before, ...selected, ...between, ...after];
+      }
+
+      if (minIdx <= 0) return prev;
+      const belowField = prev[minIdx - 1];
+      const allOthers = [...before, ...between, ...after];
+      const swapIdx = allOthers.indexOf(belowField);
+      if (swapIdx < 0) return prev;
+      return [...allOthers.slice(0, swapIdx), ...selected, ...allOthers.slice(swapIdx)];
     });
   };
 
@@ -482,21 +620,35 @@ export function useFieldEditor(currentPage: number) {
     e.preventDefault();
     e.stopPropagation();
     if (isPreviewMode) return;
-    if (selectedFieldId !== field.id) {
-      setSelectedFieldId(field.id);
+    // Ignore right-click — context menu handles it
+    if (e.button !== 0) return;
+    // Ctrl+click toggles selection
+    if (e.ctrlKey || e.metaKey) {
+      setSelectedFieldIds((prev) =>
+        prev.includes(field.id) ? prev.filter((fid) => fid !== field.id) : [...prev, field.id]
+      );
+      return;
+    }
+    const currentIds = selectedFieldIdsRef.current;
+    if (!currentIds.includes(field.id)) {
+      setSelectedFieldIds([field.id]);
       return;
     }
     snapshot();
     const rect = e.currentTarget.getBoundingClientRect();
     dragStartOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    // Store starting positions of all selected fields for multi-drag
+    multiDragOrigins.current = placedFieldsRef.current
+      .filter((f) => currentIds.includes(f.id))
+      .map((f) => ({ id: f.id, x: f.x, y: f.y }));
     setDraggingFieldId(field.id);
   };
 
   const handleTouchStart = (e: React.TouchEvent, field: PlacedField) => {
     e.stopPropagation();
     if (isPreviewMode) return;
-    if (selectedFieldId !== field.id) {
-      setSelectedFieldId(field.id);
+    if (!selectedFieldIds.includes(field.id)) {
+      setSelectedFieldIds([field.id]);
       return;
     }
     snapshot();
@@ -530,6 +682,26 @@ export function useFieldEditor(currentPage: number) {
     }
   };
 
+  const autoFitWidth = (csvRows: Record<string, string>[]) => {
+    const ids = selectedFieldIdsRef.current;
+    if (ids.length === 0) return;
+    const field = placedFieldsRef.current.find((f) => f.id === ids[ids.length - 1]);
+    if (!field) return;
+    // Find longest value for this field's column across all CSV rows
+    const values = csvRows.map((r) => r[field.fieldName] || '');
+    const longest = values.reduce((a, b) => (a.length > b.length ? a : b), '');
+    const charWidth = 0.6;
+    const estWidthPx = longest.length * (field.fontSize || 12) * charWidth;
+    // Approximate PDF page width in points (612 = US Letter)
+    const pdfPageWidthPts = 612;
+    const estWidthPercent = Math.min(95, (estWidthPx / pdfPageWidthPts) * 100);
+    const finalWidth = Math.max(5, Math.round(estWidthPercent * 10) / 10);
+    snapshot();
+    setPlacedFields((prev) =>
+      prev.map((f) => (f.id === field.id ? { ...f, width: finalWidth } : f))
+    );
+  };
+
   const toggleFieldVisibility = (id: string) => {
     setPlacedFields((prev) =>
       prev.map((f) => (f.id === id ? { ...f, visible: !f.visible } : f))
@@ -545,6 +717,7 @@ export function useFieldEditor(currentPage: number) {
 
   return {
     placedFields,
+    selectedFieldIds,
     selectedFieldId,
     isPreviewMode,
     previewRowIndex,
@@ -553,6 +726,7 @@ export function useFieldEditor(currentPage: number) {
     canRedo,
     setPlacedFields,
     setSelectedFieldId,
+    setSelectedFieldIds,
     setIsPreviewMode,
     setPreviewRowIndex,
     addFieldToPage,
@@ -562,10 +736,15 @@ export function useFieldEditor(currentPage: number) {
     updateAndCommitField,
     removeField,
     clearAllFields,
-    moveFieldToFront,
-    moveFieldToBack,
+    moveFieldForward,
+    moveFieldBackward,
+    moveSelectedToFront,
+    moveSelectedToBack,
     reorderFields,
     toggleFieldVisibility,
+    autoFitWidth,
+    copyStyle,
+    pasteStyle,
     undo,
     redo,
     handleMouseDown,

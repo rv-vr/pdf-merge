@@ -40,7 +40,14 @@ export default function App() {
     pdf.handlePdfUpload(e, fields.resetFields);
   };
 
+  const selectedFieldIds = fields.selectedFieldIds;
   const selectedField = fields.placedFields.find((f) => f.id === fields.selectedFieldId);
+  const selectedFields = selectedFieldIds.length > 0
+    ? fields.placedFields.filter((f) => selectedFieldIds.includes(f.id))
+    : [];
+  const primaryField = selectedFieldIds.length > 0
+    ? fields.placedFields.find((f) => f.id === selectedFieldIds[selectedFieldIds.length - 1])
+    : undefined;
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
   useEffect(() => {
@@ -101,11 +108,18 @@ export default function App() {
               csvRows={csv.csvRows}
               placedFields={fields.placedFields}
               selectedFieldId={fields.selectedFieldId}
+              selectedFieldIds={fields.selectedFieldIds}
               onAddField={fields.addFieldToPage}
               onRemoveField={fields.removeField}
               onSelectField={fields.setSelectedFieldId}
               onReorderFields={fields.reorderFields}
               onToggleVisibility={fields.toggleFieldVisibility}
+              onToggleFieldSelection={(id) => {
+                const ids = fields.selectedFieldIds;
+                fields.setSelectedFieldIds(
+                  ids.includes(id) ? ids.filter((fid) => fid !== id) : [...ids, id]
+                );
+              }}
             />
 
             <EditorCanvas
@@ -114,7 +128,7 @@ export default function App() {
               currentPage={pdf.currentPage}
               pdfDimensions={pdf.pdfDimensions}
               placedFields={fields.placedFields}
-              selectedFieldId={fields.selectedFieldId}
+              selectedFieldIds={fields.selectedFieldIds}
               isPreviewMode={fields.isPreviewMode}
               previewRowIndex={fields.previewRowIndex}
               csvRows={csv.csvRows}
@@ -129,6 +143,7 @@ export default function App() {
               }}
               onPreviewRowChange={fields.setPreviewRowIndex}
               onSelectField={fields.setSelectedFieldId}
+              onSelectFields={(ids) => fields.setSelectedFieldIds(ids)}
               onClearAllFields={fields.clearAllFields}
               onUndo={fields.undo}
               onRedo={fields.redo}
@@ -143,13 +158,19 @@ export default function App() {
 
             <Inspector
               selectedField={selectedField}
+              selectedFields={selectedFields}
+              primaryField={primaryField}
+              selectedFieldCount={fields.selectedFieldIds.length}
               onUpdate={fields.updateSelectedField}
               onCommit={fields.commitSelectedField}
               onUpdateCommit={fields.updateAndCommitField}
               onDuplicate={fields.handleDuplicateField}
               onDelete={fields.removeField}
-              onMoveToFront={fields.moveFieldToFront}
-              onMoveToBack={fields.moveFieldToBack}
+              onMoveSelectedToFront={fields.moveSelectedToFront}
+              onMoveSelectedToBack={fields.moveSelectedToBack}
+              onMoveFieldForward={fields.moveFieldForward}
+              onMoveFieldBackward={fields.moveFieldBackward}
+              onAutoFitWidth={() => fields.autoFitWidth(csv.csvRows)}
             />
           </div>
         )}

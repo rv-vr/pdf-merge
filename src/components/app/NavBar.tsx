@@ -59,7 +59,9 @@ const SHORTCUT_GROUPS = [
   {
     label: 'Field management',
     shortcuts: [
-      { keySets: [['Delete'], ['Backspace']], description: 'Delete selected field' },
+      { keySets: [['Delete'], ['Backspace']], description: 'Delete selected field(s)' },
+      { keySets: [['Ctrl', 'A']], description: 'Select all fields on page' },
+      { keySets: [['Ctrl', 'click']], description: 'Toggle multi-select' },
     ],
   },
 ];
