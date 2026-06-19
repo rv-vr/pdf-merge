@@ -11,7 +11,7 @@ type FieldProps = {
   align: 'left' | 'center' | 'right';
 };
 
-const DEFAULT_FIELD_PROPS: FieldProps = {
+const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean } = {
   font: 'Helvetica',
   fontSize: 14,
   color: '#000000',
@@ -19,6 +19,7 @@ const DEFAULT_FIELD_PROPS: FieldProps = {
   isItalic: false,
   width: 20,
   align: 'left',
+  visible: true,
 };
 
 export function useFieldEditor(currentPage: number) {
@@ -37,6 +38,7 @@ export function useFieldEditor(currentPage: number) {
   const dragStartOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const resizeStartWidth = useRef<number>(0);
   const resizeStartPointerX = useRef<number>(0);
+  const copiedFieldRef = useRef<Partial<PlacedField> | null>(null);
 
   // Ref mirrors — kept current so event handlers avoid stale closures.
   // Writing to refs inside effects is fine (no cascading setState).
@@ -105,8 +107,56 @@ export function useFieldEditor(currentPage: number) {
         }
       }
 
+      // Escape — deselect field (global)
+      if (e.key === 'Escape' && selectedFieldIdRef.current) {
+        e.preventDefault();
+        setSelectedFieldId(null);
+        return;
+      }
+
+      // Copy / Paste — no field selected required
+      if (ctrl && !isInputFocused) {
+        if (e.key === 'c' && selectedFieldIdRef.current) {
+          e.preventDefault();
+          const src = placedFieldsRef.current.find((f) => f.id === selectedFieldIdRef.current);
+          if (src) copiedFieldRef.current = { ...src };
+          return;
+        }
+        if (e.key === 'v' && copiedFieldRef.current) {
+          e.preventDefault();
+          snapshot();
+          const src = copiedFieldRef.current;
+          const newField: PlacedField = {
+            ...src,
+            id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            x: Math.min(90, (src.x ?? 40) + 2.5),
+            y: Math.min(90, (src.y ?? 45) + 2.5),
+            page: currentPage,
+          } as PlacedField;
+          setPlacedFields((prev) => [...prev, newField]);
+          setSelectedFieldId(newField.id);
+          return;
+        }
+      }
+
       const id = selectedFieldIdRef.current;
       if (!id || isInputFocused) return;
+
+      // Tab / Shift+Tab — cycle through fields on current page
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const pageFields = placedFieldsRef.current.filter((f) => f.page === currentPage);
+        if (pageFields.length < 2) return;
+        const idx = pageFields.findIndex((f) => f.id === id);
+        if (e.shiftKey) {
+          const prev = pageFields[(idx - 1 + pageFields.length) % pageFields.length];
+          setSelectedFieldId(prev.id);
+        } else {
+          const next = pageFields[(idx + 1) % pageFields.length];
+          setSelectedFieldId(next.id);
+        }
+        return;
+      }
 
       if (ctrl) {
         // Bold / Italic
@@ -188,26 +238,26 @@ export function useFieldEditor(currentPage: number) {
       // Arrow-key nudge (no ctrl)
       if (!ctrl) {
         const step = e.shiftKey ? 2.0 : 0.5;
-        if (e.key === 'ArrowLeft') {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
           e.preventDefault();
-          setPlacedFields((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, x: Math.max(0, f.x - step) } : f))
-          );
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          setPlacedFields((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, x: Math.min(100, f.x + step) } : f))
-          );
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setPlacedFields((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, y: Math.max(0, f.y - step) } : f))
-          );
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          setPlacedFields((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, y: Math.min(100, f.y + step) } : f))
-          );
+          snapshot();
+          if (e.key === 'ArrowLeft') {
+            setPlacedFields((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, x: Math.max(0, f.x - step) } : f))
+            );
+          } else if (e.key === 'ArrowRight') {
+            setPlacedFields((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, x: Math.min(100, f.x + step) } : f))
+            );
+          } else if (e.key === 'ArrowUp') {
+            setPlacedFields((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, y: Math.max(0, f.y - step) } : f))
+            );
+          } else if (e.key === 'ArrowDown') {
+            setPlacedFields((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, y: Math.min(100, f.y + step) } : f))
+            );
+          }
         } else if (e.key === 'Delete' || e.key === 'Backspace') {
           e.preventDefault();
           snapshot();
@@ -218,7 +268,7 @@ export function useFieldEditor(currentPage: number) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [snapshot, undo, redo]);
+  }, [snapshot, undo, redo, currentPage]);
 
   useEffect(() => {
     if (!draggingFieldId) return;
@@ -339,6 +389,7 @@ export function useFieldEditor(currentPage: number) {
     const newField: PlacedField = {
       id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       fieldName: header,
+      visible: true,
       x: 40,
       y: 45,
       page: currentPage,
@@ -479,6 +530,12 @@ export function useFieldEditor(currentPage: number) {
     }
   };
 
+  const toggleFieldVisibility = (id: string) => {
+    setPlacedFields((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, visible: !f.visible } : f))
+    );
+  };
+
   const resetFields = () => {
     setPlacedFields([]);
     setSelectedFieldId(null);
@@ -508,6 +565,7 @@ export function useFieldEditor(currentPage: number) {
     moveFieldToFront,
     moveFieldToBack,
     reorderFields,
+    toggleFieldVisibility,
     undo,
     redo,
     handleMouseDown,

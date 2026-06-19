@@ -175,7 +175,6 @@ export function EditorCanvas({
     return pdfBytes ? pdfBytes.slice(0) : null;
   }, [pdfBytes]);
 
-
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <CanvasToolbar
@@ -243,6 +242,7 @@ export function EditorCanvas({
             <div className="absolute inset-0 z-10 overflow-visible">
               {placedFields.flatMap((field) => {
                 if (field.page !== currentPage) return [];
+                if (field.visible === false && !isPreviewMode) return [];
                 const isSelected = field.id === selectedFieldId;
                 const displayVal =
                   isPreviewMode && csvRows[previewRowIndex]
@@ -269,18 +269,11 @@ export function EditorCanvas({
                             'bg-white/90 border pl-2 pr-8 shadow-sm',
                             isSelected
                               ? 'border-primary shadow-primary/20'
-                              : 'border-zinc-300 hover:border-primary/60'
+                              : 'border-zinc-300 hover:border-primary/60',
+                            field.visible === false && 'opacity-40'
                           )
                     )}
                   >
-                    {/* Label chip — floating above field box
-                    {!isPreviewMode && (
-                      <div className="pointer-events-none absolute -top-5 left-0 flex items-center gap-0.5 rounded-sm bg-zinc-900 px-1.5 py-0.75 text-[9px] font-medium leading-none text-white select-none dark:bg-zinc-100 dark:text-zinc-900">
-                        <Tag style={{ width: '0.65em', height: '0.65em' }} />
-                        <span>{field.fieldName}</span>
-                      </div>
-                    )} */}
-
                     {/* Text content */}
                     <div
                       className={cn(
