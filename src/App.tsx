@@ -105,6 +105,7 @@ export default function App() {
               onRemoveField={fields.removeField}
               onSelectField={fields.setSelectedFieldId}
               onReorderFields={fields.reorderFields}
+              onToggleVisibility={fields.toggleFieldVisibility}
             />
 
             <EditorCanvas

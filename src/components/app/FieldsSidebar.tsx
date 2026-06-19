@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileSpreadsheet, Search, Tag, Plus, GripVertical, X, Info, Hash, Type } from 'lucide-react';
+import { FileSpreadsheet, Search, Tag, Plus, GripVertical, X, Info, Hash, Type, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ interface FieldsSidebarProps {
   onSelectField: (id: string | null) => void;
   /** displayOrderIds: topmost-first (index 0 = rendered on top of PDF) */
   onReorderFields: (displayOrderIds: string[]) => void;
+  onToggleVisibility: (id: string) => void;
 }
 
 export function FieldsSidebar({
@@ -44,6 +45,7 @@ export function FieldsSidebar({
   onRemoveField,
   onSelectField,
   onReorderFields,
+  onToggleVisibility,
 }: FieldsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
@@ -231,6 +233,17 @@ export function FieldsSidebar({
                         <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                           {f.fontSize}pt
                         </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleVisibility(f.id);
+                        }}
+                        className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                        title={f.visible === false ? 'Show field' : 'Hide field'}
+                      >
+                        {f.visible === false ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
                       </button>
                       <Button
                         variant="ghost"

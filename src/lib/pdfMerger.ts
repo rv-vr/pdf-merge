@@ -26,6 +26,7 @@ export interface PlacedField {
   isItalic: boolean;
   width: number; // width as percentage of page width (0 - 100)
   align?: 'left' | 'center' | 'right';
+  visible?: boolean;
 }
 
 
