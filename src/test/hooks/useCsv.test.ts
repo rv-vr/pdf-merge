@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { renderHook, act } from "@testing-library/react"
 import { useCsv } from "@/hooks/useCsv"
 
-const mockParse = vi.fn()
+const mockParse = vi.hoisted(() => vi.fn())
 
 vi.mock("papaparse", () => ({
   default: {
