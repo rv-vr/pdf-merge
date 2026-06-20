@@ -121,31 +121,31 @@ export function CanvasToolbar({
         </div>
       )}
 
-      <Separator orientation="vertical" />
-
-      {/* Snap / Ruler toggles */}
-      <div className="flex items-center gap-0.5">
-        <Button
-          variant={snapToGuides ? 'default' : 'ghost'}
-          size="icon"
-          className="size-7"
-          onClick={() => onSnapToGuidesChange(!snapToGuides)}
-          title={`Snap to guides ${snapToGuides ? 'ON' : 'OFF'}`}
-        >
-          <Magnet className="size-3.5" />
-        </Button>
-        <Button
-          variant={showRulers ? 'default' : 'ghost'}
-          size="icon"
-          className="size-7"
-          onClick={() => onShowRulersChange(!showRulers)}
-          title="Toggle rulers"
-        >
-          <Ruler className="size-3.5" />
-        </Button>
-      </div>
-
-      <Separator orientation="vertical" />
+      {!isPreviewMode && (
+        <>
+          <Separator orientation="vertical" />
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant={snapToGuides ? 'default' : 'ghost'}
+              size="icon"
+              className="size-7"
+              onClick={() => onSnapToGuidesChange(!snapToGuides)}
+              title={`Snap to guides ${snapToGuides ? 'ON' : 'OFF'}`}
+            >
+              <Magnet className="size-3.5" />
+            </Button>
+            <Button
+              variant={showRulers ? 'default' : 'ghost'}
+              size="icon"
+              className="size-7"
+              onClick={() => onShowRulersChange(!showRulers)}
+              title="Toggle rulers"
+            >
+              <Ruler className="size-3.5" />
+            </Button>
+          </div>
+        </>
+      )}
 
       {/* Undo / Redo */}
       <div className="flex items-center gap-0.5">
