@@ -7,10 +7,12 @@ import {
   ChevronRight,
   AlertCircle,
   XCircle,
+  ScrollText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { ChangelogDialog } from "@/components/app/ChangelogDialog"
 
 type DragFileType = "pdf" | "csv" | "unknown"
 
@@ -281,6 +283,7 @@ export function UploadScreen({
   const [pdfError, setPdfError] = useState<string | null>(null)
   const [csvError, setCsvError] = useState<string | null>(null)
   const [globalDropError, setGlobalDropError] = useState<string | null>(null)
+  const [changelogOpen, setChangelogOpen] = useState(false)
   const dragCounter = useRef(0)
   const globalErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -345,7 +348,7 @@ export function UploadScreen({
 
   return (
     <div
-      className="flex flex-1 flex-col items-center justify-center overflow-auto bg-muted/20 p-8"
+      className="relative flex flex-1 flex-col items-center justify-center overflow-auto bg-muted/20 p-8"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -409,6 +412,19 @@ export function UploadScreen({
           </Button>
         </div>
       </div>
+
+      {/* Changelog button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setChangelogOpen(true)}
+        className="absolute bottom-6 right-6 size-8 rounded-lg"
+        title="Changelog"
+      >
+        <ScrollText className="size-4" />
+      </Button>
+
+      <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
     </div>
   )
 }
