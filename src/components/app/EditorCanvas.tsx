@@ -416,7 +416,7 @@ export function EditorCanvas({
                             field.locked ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing',
                             'bg-white/90 border pl-2 pr-8 shadow-sm',
                             isSelected
-                              ? 'border-primary shadow-primary/20'
+                              ? 'border-zinc-300 ring-1 ring-blue-400'
                               : 'border-zinc-300 hover:border-primary/60',
                             field.visible === false && 'opacity-40'
                           )
