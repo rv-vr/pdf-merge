@@ -441,7 +441,7 @@ export function useFieldEditor(currentPage: number) {
     };
   }, [resizingFieldId, placedFields]);
 
-  const addFieldToPage = (header: string) => {
+  const addFieldToPage = (header: string, pos?: { x: number; y: number }) => {
     snapshot();
     // Look up properties from the currently selected field, or the last selected one, or fall back to defaults.
     const primaryId = selectedFieldIdsRef.current[selectedFieldIdsRef.current.length - 1];
@@ -464,8 +464,8 @@ export function useFieldEditor(currentPage: number) {
       id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       fieldName: header,
       visible: true,
-      x: 40,
-      y: 45,
+      x: pos?.x ?? 40,
+      y: pos?.y ?? 45,
       page: currentPage,
       ...props,
     };

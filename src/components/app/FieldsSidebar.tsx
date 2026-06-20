@@ -168,8 +168,13 @@ export function FieldsSidebar({
                   <button
                     key={header}
                     type="button"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', header);
+                      e.dataTransfer.effectAllowed = 'copy';
+                    }}
                     onClick={() => onAddField(header)}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-accent"
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-accent cursor-grab active:cursor-grabbing"
                   >
                     <span className="text-muted-foreground">{getColumnIcon(header)}</span>
                     <span className="min-w-0 flex-1">

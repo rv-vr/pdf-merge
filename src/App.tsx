@@ -154,6 +154,7 @@ export default function App() {
               containerRef={fields.containerRef}
               onLoadSuccess={pdf.setTotalPages}
               onPageRenderSuccess={(width, height) => pdf.setPdfDimensions({ width, height })}
+              onDropField={(header, x, y) => fields.addFieldToPage(header, { x, y })}
             />
 
             <Inspector

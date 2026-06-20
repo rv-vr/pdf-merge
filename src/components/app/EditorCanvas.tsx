@@ -141,6 +141,7 @@ interface EditorCanvasProps {
   containerRef: RefObject<HTMLDivElement | null>;
   onLoadSuccess: (totalPages: number) => void;
   onPageRenderSuccess: (width: number, height: number) => void;
+  onDropField?: (header: string, x: number, y: number) => void;
 }
 
 export function EditorCanvas({
@@ -172,6 +173,7 @@ export function EditorCanvas({
   containerRef,
   onLoadSuccess,
   onPageRenderSuccess,
+  onDropField,
 }: EditorCanvasProps) {
   const memoizedFile = React.useMemo(() => {
     return pdfBytes ? pdfBytes.slice(0) : null;
@@ -289,6 +291,23 @@ export function EditorCanvas({
               width: pdfDimensions.width ? `${pdfDimensions.width}px` : 'auto',
             }}
             onMouseDown={handleWorkspaceMouseDown}
+            onDragOver={(e) => {
+              if (isPreviewMode || !onDropField) return;
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDrop={(e) => {
+              if (isPreviewMode || !onDropField) return;
+              e.preventDefault();
+              e.stopPropagation();
+              const header = e.dataTransfer.getData('text/plain');
+              if (!header) return;
+              const rect = containerRef.current?.getBoundingClientRect();
+              if (!rect) return;
+              const x = ((e.clientX - rect.left) / rect.width) * 100;
+              const y = ((e.clientY - rect.top) / rect.height) * 100;
+              onDropField(header, x, y);
+            }}
           >
             {/* Rendered PDF canvas using react-pdf */}
             <Document
