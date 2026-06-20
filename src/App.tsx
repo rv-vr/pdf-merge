@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { pdfjs } from 'react-pdf';
 import { NavBar } from '@/components/app/NavBar';
 import { UploadScreen } from '@/components/app/UploadScreen';
 import { FieldsSidebar } from '@/components/app/FieldsSidebar';
-import { EditorCanvas } from '@/components/app/EditorCanvas';
 import { Inspector } from '@/components/app/Inspector';
-import { ExportDialog } from '@/components/app/ExportDialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
+
+const EditorCanvas = React.lazy(() =>
+  import('@/components/app/EditorCanvas').then((m) => ({ default: m.EditorCanvas }))
+);
+const ExportDialog = React.lazy(() =>
+  import('@/components/app/ExportDialog').then((m) => ({ default: m.ExportDialog }))
+);
 import { usePdf } from '@/hooks/usePdf';
 import { useCsv } from '@/hooks/useCsv';
 import { useFieldEditor } from '@/hooks/useFieldEditor';
@@ -122,40 +127,42 @@ export default function App() {
               }}
             />
 
-            <EditorCanvas
-              pdfBytes={pdf.pdfBytes}
-              totalPages={pdf.totalPages}
-              currentPage={pdf.currentPage}
-              pdfDimensions={pdf.pdfDimensions}
-              placedFields={fields.placedFields}
-              selectedFieldIds={fields.selectedFieldIds}
-              isPreviewMode={fields.isPreviewMode}
-              previewRowIndex={fields.previewRowIndex}
-              csvRows={csv.csvRows}
-              zoom={pdf.zoom}
-              canUndo={fields.canUndo}
-              canRedo={fields.canRedo}
-              onPageChange={pdf.setCurrentPage}
-              onZoomChange={pdf.setZoom}
-              onTogglePreview={() => {
-                fields.setIsPreviewMode(!fields.isPreviewMode);
-                fields.setSelectedFieldId(null);
-              }}
-              onPreviewRowChange={fields.setPreviewRowIndex}
-              onSelectField={fields.setSelectedFieldId}
-              onSelectFields={(ids) => fields.setSelectedFieldIds(ids)}
-              onClearAllFields={fields.clearAllFields}
-              onUndo={fields.undo}
-              onRedo={fields.redo}
-              onFieldMouseDown={fields.handleMouseDown}
-              onFieldTouchStart={fields.handleTouchStart}
-              onResizeMouseDown={fields.handleResizeMouseDown}
-              onResizeTouchStart={fields.handleResizeTouchStart}
-              containerRef={fields.containerRef}
-              onLoadSuccess={pdf.setTotalPages}
-              onPageRenderSuccess={(width, height) => pdf.setPdfDimensions({ width, height })}
-              onDropField={(header, x, y) => fields.addFieldToPage(header, { x, y })}
-            />
+            <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading editor…</div>}>
+              <EditorCanvas
+                pdfBytes={pdf.pdfBytes}
+                totalPages={pdf.totalPages}
+                currentPage={pdf.currentPage}
+                pdfDimensions={pdf.pdfDimensions}
+                placedFields={fields.placedFields}
+                selectedFieldIds={fields.selectedFieldIds}
+                isPreviewMode={fields.isPreviewMode}
+                previewRowIndex={fields.previewRowIndex}
+                csvRows={csv.csvRows}
+                zoom={pdf.zoom}
+                canUndo={fields.canUndo}
+                canRedo={fields.canRedo}
+                onPageChange={pdf.setCurrentPage}
+                onZoomChange={pdf.setZoom}
+                onTogglePreview={() => {
+                  fields.setIsPreviewMode(!fields.isPreviewMode);
+                  fields.setSelectedFieldId(null);
+                }}
+                onPreviewRowChange={fields.setPreviewRowIndex}
+                onSelectField={fields.setSelectedFieldId}
+                onSelectFields={(ids) => fields.setSelectedFieldIds(ids)}
+                onClearAllFields={fields.clearAllFields}
+                onUndo={fields.undo}
+                onRedo={fields.redo}
+                onFieldMouseDown={fields.handleMouseDown}
+                onFieldTouchStart={fields.handleTouchStart}
+                onResizeMouseDown={fields.handleResizeMouseDown}
+                onResizeTouchStart={fields.handleResizeTouchStart}
+                containerRef={fields.containerRef}
+                onLoadSuccess={pdf.setTotalPages}
+                onPageRenderSuccess={(width, height) => pdf.setPdfDimensions({ width, height })}
+                onDropField={(header, x, y) => fields.addFieldToPage(header, { x, y })}
+              />
+            </Suspense>
 
             <Inspector
               selectedField={selectedField}
@@ -176,20 +183,22 @@ export default function App() {
           </div>
         )}
 
-        <ExportDialog
-          open={exportState.exportDialogOpen}
-          onOpenChange={exportState.handleExportDialogChange}
-          csvHeaders={csv.csvHeaders}
-          csvRows={csv.csvRows}
-          pdfFile={pdf.pdfFile}
-          filenameColumn={csv.filenameColumn}
-          onFilenameColumnChange={csv.setFilenameColumn}
-          isProcessing={exportState.isProcessing}
-          processingProgress={exportState.processingProgress}
-          processingMessage={exportState.processingMessage}
-          onDownloadCombined={exportState.handleDownloadCombinedPDF}
-          onDownloadZip={exportState.handleDownloadZIP}
-        />
+        <Suspense fallback={null}>
+          <ExportDialog
+            open={exportState.exportDialogOpen}
+            onOpenChange={exportState.handleExportDialogChange}
+            csvHeaders={csv.csvHeaders}
+            csvRows={csv.csvRows}
+            pdfFile={pdf.pdfFile}
+            filenameColumn={csv.filenameColumn}
+            onFilenameColumnChange={csv.setFilenameColumn}
+            isProcessing={exportState.isProcessing}
+            processingProgress={exportState.processingProgress}
+            processingMessage={exportState.processingMessage}
+            onDownloadCombined={exportState.handleDownloadCombinedPDF}
+            onDownloadZip={exportState.handleDownloadZIP}
+          />
+        </Suspense>
       </div>
     </TooltipProvider>
   );
