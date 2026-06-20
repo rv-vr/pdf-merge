@@ -371,6 +371,12 @@ export function EditorCanvas({
                     style={getFieldStyle(field, zoom, isPreviewMode)}
                     onMouseDown={(e) => onFieldMouseDown(e, field)}
                     onTouchStart={(e) => onFieldTouchStart(e, field)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onFieldMouseDown(e as unknown as React.MouseEvent, field);
+                      }
+                    }}
                     className={cn(
                       'absolute z-20 flex items-center overflow-visible whitespace-nowrap select-none rounded transition-colors',
                       isPreviewMode

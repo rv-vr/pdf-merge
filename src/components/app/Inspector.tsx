@@ -518,6 +518,7 @@ export function Inspector({
                     const v = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
                     onUpdate({ color: '#' + v });
                   }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') onCommit(); }}
                   onBlur={() => onCommit()}
                   aria-label="Hex color value"
                   className="flex-1 bg-transparent font-mono text-sm uppercase outline-none placeholder:text-muted-foreground"
