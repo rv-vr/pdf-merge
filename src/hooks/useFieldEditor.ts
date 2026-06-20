@@ -11,7 +11,7 @@ type FieldProps = {
   align: 'left' | 'center' | 'right';
 };
 
-const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean } = {
+const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean; locked: boolean } = {
   font: 'Helvetica',
   fontSize: 14,
   color: '#000000',
@@ -20,6 +20,7 @@ const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean } = {
   width: 20,
   align: 'left',
   visible: true,
+  locked: false,
 };
 
 export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0) {
@@ -54,6 +55,9 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
     selectedFieldIdsRef.current = selectedFieldIds;
     if (selectedFieldIds.length === 1) lastSelectedFieldIdRef.current = selectedFieldIds[0];
   }, [selectedFieldIds]);
+
+  const filterLockedIds = (ids: string[]) =>
+    ids.filter((id) => !placedFieldsRef.current.find((f) => f.id === id)?.locked);
 
   const canUndo = undoStack.length > 0;
   const canRedo = redoStack.length > 0;
@@ -101,7 +105,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   };
 
   const pasteStyle = () => {
-    const ids = selectedFieldIdsRef.current;
+    const ids = filterLockedIds(selectedFieldIdsRef.current);
     if (ids.length === 0 || !copiedStyleRef.current) return;
     snapshot();
     setPlacedFields((prev) =>
@@ -210,7 +214,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
         }
       }
 
-      const ids = selectedFieldIdsRef.current;
+      const ids = filterLockedIds(selectedFieldIdsRef.current);
       if (ids.length === 0 || isInputFocused) return;
 
       // Use primary (= last selected) for single-field operations
@@ -282,7 +286,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
       // Layer reorder — operate on primary field
       if (e.key === ']' || e.key === '[') {
         e.preventDefault();
-        const ids = selectedFieldIdsRef.current;
+        const ids = filterLockedIds(selectedFieldIdsRef.current);
         if (ids.length > 1) {
           e.key === ']' ? moveSelectedToFront() : moveSelectedToBack();
         } else if (ids.length === 1) {
@@ -312,9 +316,11 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
           );
         } else if (e.key === 'Delete' || e.key === 'Backspace') {
           e.preventDefault();
+          const lockedAmongSelected = placedFieldsRef.current.filter((f) => ids.includes(f.id) && f.locked);
+          if (lockedAmongSelected.length === ids.length) return;
           snapshot();
-          setPlacedFields((prev) => prev.filter((f) => !ids.includes(f.id)));
-          setSelectedFieldIds([]);
+          setPlacedFields((prev) => prev.filter((f) => !ids.includes(f.id) || f.locked));
+          setSelectedFieldIds(lockedAmongSelected.length > 0 ? lockedAmongSelected.map((f) => f.id) : []);
         }
       }
     };
@@ -509,7 +515,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   // (e.g. native color picker 'change') because it reads selectedFieldId from the ref,
   // not a stale closure.
   const updateSelectedField = useCallback((updates: Partial<PlacedField>) => {
-    const ids = selectedFieldIdsRef.current;
+    const ids = filterLockedIds(selectedFieldIdsRef.current);
     if (ids.length === 0) return;
     setPlacedFields((prev) =>
       prev.map((f) => (ids.includes(f.id) ? { ...f, ...updates } : f))
@@ -523,7 +529,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
 
   // Snapshot + update in one step — for discrete one-shot changes (font family, bold, italic, alignment).
   const updateAndCommitField = useCallback((updates: Partial<PlacedField>) => {
-    const ids = selectedFieldIdsRef.current;
+    const ids = filterLockedIds(selectedFieldIdsRef.current);
     if (ids.length === 0) return;
     snapshot();
     setPlacedFields((prev) =>
@@ -532,14 +538,22 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   }, [snapshot]);
 
   const removeField = (id: string) => {
+    const field = placedFieldsRef.current.find((f) => f.id === id);
+    if (field?.locked) return;
     snapshot();
     setPlacedFields((prev) => prev.filter((f) => f.id !== id));
     if (selectedFieldId === id) setSelectedFieldId(null);
   };
 
   const clearAllFields = () => {
-    snapshot();
-    setPlacedFields([]);
+    const hasLocked = placedFieldsRef.current.some((f) => f.locked);
+    if (hasLocked) {
+      snapshot();
+      setPlacedFields((prev) => prev.filter((f) => !f.locked));
+    } else {
+      snapshot();
+      setPlacedFields([]);
+    }
     setSelectedFieldId(null);
   };
 
@@ -569,7 +583,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
 
   // Bulk: move all selected fields forward/backward by consolidating or swapping boundary
   const moveSelectedToFront = (overrideIds?: string[]) => {
-    const ids = overrideIds ?? selectedFieldIdsRef.current;
+    const ids = filterLockedIds(overrideIds ?? selectedFieldIdsRef.current);
     if (ids.length === 0) return;
     snapshot();
     setPlacedFields((prev) => {
@@ -598,7 +612,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   };
 
   const moveSelectedToBack = (overrideIds?: string[]) => {
-    const ids = overrideIds ?? selectedFieldIdsRef.current;
+    const ids = filterLockedIds(overrideIds ?? selectedFieldIdsRef.current);
     if (ids.length === 0) return;
     snapshot();
     setPlacedFields((prev) => {
@@ -637,6 +651,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   }, [snapshot]);
 
   const handleMouseDown = (e: React.MouseEvent, field: PlacedField) => {
+    if (field.locked) return;
     e.preventDefault();
     e.stopPropagation();
     if (isPreviewMode) return;
@@ -659,12 +674,13 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
     dragStartOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     // Store starting positions of all selected fields for multi-drag
     multiDragOrigins.current = placedFieldsRef.current
-      .filter((f) => currentIds.includes(f.id))
+      .filter((f) => currentIds.includes(f.id) && !f.locked)
       .map((f) => ({ id: f.id, x: f.x, y: f.y }));
     setDraggingFieldId(field.id);
   };
 
   const handleTouchStart = (e: React.TouchEvent, field: PlacedField) => {
+    if (field.locked) return;
     e.stopPropagation();
     if (isPreviewMode) return;
     if (!selectedFieldIds.includes(field.id)) {
@@ -681,6 +697,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   };
 
   const handleResizeMouseDown = (e: React.MouseEvent, field: PlacedField) => {
+    if (field.locked) return;
     e.preventDefault();
     e.stopPropagation();
     if (isPreviewMode) return;
@@ -691,6 +708,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   };
 
   const handleResizeTouchStart = (e: React.TouchEvent, field: PlacedField) => {
+    if (field.locked) return;
     e.stopPropagation();
     if (isPreviewMode) return;
     const touch = e.touches[0];
@@ -703,10 +721,10 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   };
 
   const autoFitWidth = (csvRows: Record<string, string>[]) => {
-    const ids = selectedFieldIdsRef.current;
+    const ids = filterLockedIds(selectedFieldIdsRef.current);
     if (ids.length === 0) return;
     const field = placedFieldsRef.current.find((f) => f.id === ids[ids.length - 1]);
-    if (!field) return;
+    if (!field || field.locked) return;
     // Find longest value for this field's column across all CSV rows
     const values = csvRows.map((r) => r[field.fieldName] || '');
     const longest = values.reduce((a, b) => (a.length > b.length ? a : b), '');
@@ -719,6 +737,13 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
     snapshot();
     setPlacedFields((prev) =>
       prev.map((f) => (f.id === field.id ? { ...f, width: finalWidth } : f))
+    );
+  };
+
+  const toggleFieldLock = (id: string) => {
+    snapshot();
+    setPlacedFields((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, locked: !f.locked } : f))
     );
   };
 
@@ -761,6 +786,7 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
     moveSelectedToFront,
     moveSelectedToBack,
     reorderFields,
+    toggleFieldLock,
     toggleFieldVisibility,
     autoFitWidth,
     copyStyle,

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileSpreadsheet, Search, Tag, Plus, GripVertical, X, Info, Hash, Type, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { FileSpreadsheet, Search, Tag, Plus, GripVertical, Lock, Unlock, Info, Hash, Type, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -29,12 +28,12 @@ interface FieldsSidebarProps {
   selectedFieldId: string | null;
   selectedFieldIds: string[];
   onAddField: (header: string) => void;
-  onRemoveField: (id: string) => void;
   onSelectField: (id: string | null) => void;
   /** displayOrderIds: topmost-first (index 0 = rendered on top of PDF) */
   onReorderFields: (displayOrderIds: string[]) => void;
   onToggleVisibility: (id: string) => void;
   onToggleFieldSelection: (id: string) => void;
+  onToggleLock: (id: string) => void;
 }
 
 export function FieldsSidebar({
@@ -45,11 +44,11 @@ export function FieldsSidebar({
   selectedFieldId,
   selectedFieldIds,
   onAddField,
-  onRemoveField,
   onSelectField,
   onReorderFields,
   onToggleVisibility,
   onToggleFieldSelection,
+  onToggleLock,
 }: FieldsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
@@ -262,18 +261,22 @@ export function FieldsSidebar({
                       >
                         {f.visible === false ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
                       </button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onRemoveField(f.id);
+                          onToggleLock(f.id);
                         }}
-                        title="Remove field"
+                        className={cn(
+                          'flex size-6 shrink-0 items-center justify-center rounded',
+                          f.locked
+                            ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10'
+                            : 'text-muted-foreground hover:text-foreground'
+                        )}
+                        title={f.locked ? 'Unlock field' : 'Lock field'}
                       >
-                        <X className="size-3" />
-                      </Button>
+                        {f.locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
+                      </button>
                     </div>
                   );
                 })}

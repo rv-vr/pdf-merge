@@ -110,10 +110,10 @@ export default function App() {
               selectedFieldId={fields.selectedFieldId}
               selectedFieldIds={fields.selectedFieldIds}
               onAddField={fields.addFieldToPage}
-              onRemoveField={fields.removeField}
               onSelectField={fields.setSelectedFieldId}
               onReorderFields={fields.reorderFields}
               onToggleVisibility={fields.toggleFieldVisibility}
+              onToggleLock={fields.toggleFieldLock}
               onToggleFieldSelection={(id) => {
                 const ids = fields.selectedFieldIds;
                 fields.setSelectedFieldIds(

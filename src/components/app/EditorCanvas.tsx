@@ -1,7 +1,7 @@
 import React from 'react';
 import type { RefObject } from 'react';
 import { Document, Page } from 'react-pdf';
-import { FileText, FileUp, GripVerticalIcon } from 'lucide-react';
+import { FileText, FileUp, GripVerticalIcon, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PlacedField } from '@/types';
 import { cn } from '@/lib/utils';
@@ -376,7 +376,7 @@ export function EditorCanvas({
                       isPreviewMode
                         ? 'pointer-events-none cursor-default bg-transparent'
                         : cn(
-                            'cursor-grab active:cursor-grabbing',
+                            field.locked ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing',
                             'bg-white/90 border pl-2 pr-8 shadow-sm',
                             isSelected
                               ? 'border-primary shadow-primary/20'
@@ -404,6 +404,13 @@ export function EditorCanvas({
                       </span>
                     </div>
 
+                    {/* Lock icon (bottom-left) — hidden in preview */}
+                    {field.locked && !isPreviewMode && (
+                      <div className="absolute bottom-0 left-0 flex size-4 items-center justify-center rounded-tr bg-zinc-200/80 text-zinc-500">
+                        <Lock className="size-2.5" />
+                      </div>
+                    )}
+
                     {/* Width resize grip (right edge) */}
                     {!isPreviewMode && (
                       <button
@@ -418,13 +425,14 @@ export function EditorCanvas({
                           onResizeTouchStart(e, field);
                         }}
                         className={cn(
-                          'absolute bottom-0 right-0 top-0 flex w-5 cursor-ew-resize items-center justify-center rounded-r select-none transition-colors',
+                          'absolute bottom-0 right-0 top-0 flex w-5 items-center justify-center rounded-r select-none transition-colors',
+                          field.locked ? 'pointer-events-none opacity-30' : 'cursor-ew-resize',
                           isSelected
                             ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80'
                             : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300 active:bg-zinc-400'
                         )}
                         aria-label="Drag to resize field width"
-                        title="Drag to resize field width"
+                        title={field.locked ? 'Field is locked' : 'Drag to resize field width'}
                       >
                         <GripVerticalIcon className="size-3" />
                       </button>

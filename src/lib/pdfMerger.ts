@@ -27,6 +27,7 @@ export interface PlacedField {
   width: number; // width as percentage of page width (0 - 100)
   align?: 'left' | 'center' | 'right';
   visible?: boolean;
+  locked?: boolean;
 }
 
 
@@ -223,7 +224,8 @@ async function generateSingleMergedPDF(
     const font = fontCache.get(`${field.font}|${field.isBold}|${field.isItalic}`)!;
 
     // Translate coordinate (canvas top-left percentage -> PDF bottom-left points)
-    let { x, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
+    const { x: xOrig, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
+    let x = xOrig;
 
     // Apply text alignment within the field box
     const fieldWidthPts = (field.width / 100) * pdfWidth;
@@ -350,7 +352,8 @@ export async function generateCombinedPDF(
       const font = fontCache.get(`${field.font}|${field.isBold}|${field.isItalic}`)!;
 
       // Translate coordinate (canvas top-left percentage -> PDF bottom-left points)
-      let { x, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
+    const { x: xOrig, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
+    let x = xOrig;
 
       // Apply text alignment within the field box
       const fieldWidthPts = (field.width / 100) * pdfWidth;
