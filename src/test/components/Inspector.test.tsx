@@ -34,6 +34,8 @@ const baseProps = {
   onMoveFieldForward: vi.fn(),
   onMoveFieldBackward: vi.fn(),
   onAutoFitWidth: vi.fn(),
+  nativeWidth: 600,
+  nativeHeight: 800,
 }
 
 describe("Inspector", () => {

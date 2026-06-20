@@ -35,7 +35,12 @@ export default function App() {
 
   const pdf = usePdf(view)
   const csv = useCsv()
-  const fields = useFieldEditor(pdf.currentPage, csv.csvRows.length)
+  const fields = useFieldEditor(
+    pdf.currentPage,
+    csv.csvRows.length,
+    pdf.pdfDimensions,
+    pdf.zoom
+  )
   const exportState = useExport(
     pdf.pdfBytes,
     pdf.pdfFile,
@@ -66,6 +71,12 @@ export default function App() {
     selectedFieldIds.length > 0
       ? fields.placedFields.filter((f) => selectedFieldIds.includes(f.id))
       : []
+  const nativeWidth = pdf.pdfDimensions.width
+    ? Math.round(pdf.pdfDimensions.width / pdf.zoom)
+    : 600
+  const nativeHeight = pdf.pdfDimensions.height
+    ? Math.round(pdf.pdfDimensions.height / pdf.zoom)
+    : 800
   const primaryField =
     selectedFieldIds.length > 0
       ? fields.placedFields.find(
@@ -223,6 +234,8 @@ export default function App() {
               onMoveFieldForward={fields.moveFieldForward}
               onMoveFieldBackward={fields.moveFieldBackward}
               onAutoFitWidth={() => fields.autoFitWidth(csv.csvRows)}
+              nativeWidth={nativeWidth}
+              nativeHeight={nativeHeight}
             />
           </div>
         )}

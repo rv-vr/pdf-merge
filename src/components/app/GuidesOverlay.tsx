@@ -10,6 +10,7 @@ interface GuidesOverlayProps {
   ghostPosition?: number | null
   ghostOrientation?: "horizontal" | "vertical"
   versionKey?: number
+  zoom: number
 }
 
 function getCanvasRect(): DOMRect | null {
@@ -20,12 +21,10 @@ function getCanvasRect(): DOMRect | null {
   )
 }
 
-function toVp(pct: number, isVert: boolean): number {
+function toVp(px: number, isVert: boolean, zoom: number): number {
   const r = getCanvasRect()
   if (!r) return 0
-  return isVert
-    ? r.left + (pct / 100) * r.width
-    : r.top + (pct / 100) * r.height
+  return isVert ? r.left + px * zoom : r.top + px * zoom
 }
 
 export function GuidesOverlay({
@@ -37,6 +36,7 @@ export function GuidesOverlay({
   ghostPosition,
   ghostOrientation,
   versionKey,
+  zoom,
 }: GuidesOverlayProps) {
   const dragRef = useRef<{
     id: string
@@ -85,22 +85,7 @@ export function GuidesOverlay({
     refreshWsBounds()
   }, [versionKey, refreshWsBounds])
 
-  // Cull guides outside viewport to avoid rendering off-screen
-  const isInViewport = useCallback(
-    (guide: Guide): boolean => {
-      const isVert = guide.orientation === "vertical"
-      const vp = toVp(guide.position, isVert)
-      if (wsBounds.height <= 0) return false
-      if (isVert)
-        return vp >= wsBounds.left && vp <= wsBounds.left + wsBounds.width
-      return vp >= wsBounds.top && vp <= wsBounds.top + wsBounds.height
-    },
-    [wsBounds]
-  )
-
-  const pageGuides = guides.filter(
-    (g) => g.page === currentPage && isInViewport(g)
-  )
+  const pageGuides = guides.filter((g) => g.page === currentPage)
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, guide: Guide) => {
@@ -112,11 +97,11 @@ export function GuidesOverlay({
         if (!dragRef.current) return
         const r = getCanvasRect()
         if (!r) return
-        const pct =
+        const px =
           dragRef.current.orientation === "vertical"
-            ? ((ev.clientX - r.left) / r.width) * 100
-            : ((ev.clientY - r.top) / r.height) * 100
-        onUpdateGuidePosition(dragRef.current.id, Math.round(pct))
+            ? (ev.clientX - r.left) / zoom
+            : (ev.clientY - r.top) / zoom
+        onUpdateGuidePosition(dragRef.current.id, Math.round(px))
       }
 
       const handleMouseUp = (ev: MouseEvent) => {
@@ -143,6 +128,7 @@ export function GuidesOverlay({
       document.addEventListener("mousemove", handleMouseMove)
       document.addEventListener("mouseup", handleMouseUp)
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [onUpdateGuidePosition, onRemoveGuide]
   )
 
@@ -173,7 +159,7 @@ export function GuidesOverlay({
     >
       {pageGuides.map((guide) => {
         const isVert = guide.orientation === "vertical"
-        const vp = toVp(guide.position, isVert)
+        const vp = toVp(guide.position, isVert, zoom)
         return (
           <div
             key={guide.id}
@@ -204,7 +190,8 @@ export function GuidesOverlay({
             position: "absolute",
             [ghostOrientation === "vertical" ? "left" : "top"]: toVp(
               ghostPosition,
-              ghostOrientation === "vertical"
+              ghostOrientation === "vertical",
+              zoom
             ),
             [ghostOrientation === "vertical" ? "top" : "left"]: 0,
             [ghostOrientation === "vertical" ? "width" : "height"]: 1,

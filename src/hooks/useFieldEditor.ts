@@ -29,7 +29,7 @@ const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean; locked: boolean } =
     color: "#000000",
     isBold: false,
     isItalic: false,
-    width: 20,
+    width: 100,
     align: "left",
     visible: true,
     locked: false,
@@ -37,7 +37,9 @@ const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean; locked: boolean } =
 
 export function useFieldEditor(
   currentPage: number,
-  totalPreviewRows: number = 0
+  totalPreviewRows: number = 0,
+  pdfDimensions?: { width: number; height: number },
+  zoom: number = 1
 ) {
   const [placedFields, setPlacedFields] = useState<PlacedField[]>([])
   const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([])
@@ -56,6 +58,13 @@ export function useFieldEditor(
   // Undo / Redo stacks (max 50 entries each)
   const [undoStack, setUndoStack] = useState<PlacedField[][]>([])
   const [redoStack, setRedoStack] = useState<PlacedField[][]>([])
+
+  const nativeWidth = pdfDimensions
+    ? Math.round(pdfDimensions.width / zoom)
+    : 600
+  const nativeHeight = pdfDimensions
+    ? Math.round(pdfDimensions.height / zoom)
+    : 800
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   const dragStartOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -93,7 +102,9 @@ export function useFieldEditor(
             (!orientation || g.orientation === orientation)
         )
         .map((g) => g.position)
-      pts.push(0, 100)
+      if (orientation === "vertical" || !orientation) pts.push(0, nativeWidth)
+      if (orientation === "horizontal" || !orientation)
+        pts.push(0, nativeHeight)
       return pts
     },
     [guides, currentPage]
@@ -101,7 +112,7 @@ export function useFieldEditor(
 
   const snapWithEdge = useCallback(
     (value: number, edgeOffset: number, snapPoints: number[]): number => {
-      const threshold = 3
+      const threshold = Math.max(8, Math.round(nativeWidth * 0.03))
       let best = value
       let bestDist = threshold
       for (const pt of snapPoints) {
@@ -119,7 +130,7 @@ export function useFieldEditor(
       }
       return best
     },
-    []
+    [nativeWidth]
   )
 
   const canUndo = undoStack.length > 0
@@ -277,8 +288,18 @@ export function useFieldEditor(
             (src, i) => ({
               ...src,
               id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${i}`,
-              x: Math.min(90, (src.x ?? 40) + 2.5 + i * 1.5),
-              y: Math.min(90, (src.y ?? 45) + 2.5 + i * 1.5),
+              x: Math.min(
+                nativeWidth,
+                (src.x ?? Math.round(nativeWidth * 0.4)) +
+                  Math.round(nativeWidth * 0.025) +
+                  i * Math.round(nativeWidth * 0.015)
+              ),
+              y: Math.min(
+                nativeHeight,
+                (src.y ?? Math.round(nativeHeight * 0.45)) +
+                  Math.round(nativeHeight * 0.025) +
+                  i * Math.round(nativeHeight * 0.015)
+              ),
               page: currentPage,
             })
           ) as PlacedField[]
@@ -395,7 +416,10 @@ export function useFieldEditor(
 
       // Arrow-key nudge (no ctrl) — move all selected
       if (!ctrl) {
-        const step = e.shiftKey ? 2.0 : 0.5
+        const step = Math.max(
+          1,
+          Math.round((e.shiftKey ? 0.02 : 0.005) * nativeWidth)
+        )
         if (
           e.key === "ArrowLeft" ||
           e.key === "ArrowRight" ||
@@ -416,7 +440,7 @@ export function useFieldEditor(
                     x: Math.max(
                       0,
                       Math.min(
-                        100,
+                        nativeWidth,
                         snapToGuides
                           ? snapWithEdge(
                               f.x + dx,
@@ -429,14 +453,11 @@ export function useFieldEditor(
                     y: Math.max(
                       0,
                       Math.min(
-                        100,
+                        nativeHeight,
                         snapToGuides
                           ? snapWithEdge(
                               f.y + dy,
-                              ((f.fontSize * 1.5) /
-                                (containerRef.current?.getBoundingClientRect()
-                                  .height ?? 800)) *
-                                100,
+                              f.fontSize * 1.5,
                               getGuideSnapPoints("horizontal")
                             )
                           : f.y + dy
@@ -488,14 +509,10 @@ export function useFieldEditor(
       const draggedOrigin = origins.find((o) => o.id === draggingFieldId)
       if (!draggedOrigin || origins.length === 0) {
         // Fallback: single-field drag
-        let xPercent =
-          ((e.clientX - rect.left - dragStartOffset.current.x) / rect.width) *
-          100
-        let yPercent =
-          ((e.clientY - rect.top - dragStartOffset.current.y) / rect.height) *
-          100
-        xPercent = Math.max(0, Math.min(100, xPercent))
-        yPercent = Math.max(0, Math.min(100, yPercent))
+        let xPx = (e.clientX - rect.left - dragStartOffset.current.x) / zoom
+        let yPx = (e.clientY - rect.top - dragStartOffset.current.y) / zoom
+        xPx = Math.max(0, Math.min(nativeWidth, xPx))
+        yPx = Math.max(0, Math.min(nativeHeight, yPx))
         if (snapToGuides) {
           const f = placedFieldsRef.current.find(
             (pf) => pf.id === draggingFieldId
@@ -503,22 +520,19 @@ export function useFieldEditor(
           if (f) {
             const vPts = getGuideSnapPoints("vertical")
             const hPts = getGuideSnapPoints("horizontal")
-            const hPct = ((f.fontSize * 1.5) / rect.height) * 100
-            xPercent = snapWithEdge(xPercent, f.width, vPts)
-            yPercent = snapWithEdge(yPercent, hPct, hPts)
+            xPx = snapWithEdge(xPx, f.width, vPts)
+            yPx = snapWithEdge(yPx, f.fontSize * 1.5, hPts)
           }
         }
         setPlacedFields((prev) =>
           prev.map((f) =>
-            f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f
+            f.id === draggingFieldId ? { ...f, x: xPx, y: yPx } : f
           )
         )
         return
       }
-      let toX =
-        ((e.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100
-      let toY =
-        ((e.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100
+      let toX = (e.clientX - rect.left - dragStartOffset.current.x) / zoom
+      let toY = (e.clientY - rect.top - dragStartOffset.current.y) / zoom
       if (snapToGuides) {
         const f = placedFieldsRef.current.find(
           (pf) => pf.id === draggingFieldId
@@ -526,9 +540,8 @@ export function useFieldEditor(
         if (f) {
           const vPts = getGuideSnapPoints("vertical")
           const hPts = getGuideSnapPoints("horizontal")
-          const hPct = ((f.fontSize * 1.5) / rect.height) * 100
           toX = snapWithEdge(toX, f.width, vPts)
-          toY = snapWithEdge(toY, hPct, hPts)
+          toY = snapWithEdge(toY, f.fontSize * 1.5, hPts)
         }
       }
       const deltaX = toX - draggedOrigin.x
@@ -539,8 +552,8 @@ export function useFieldEditor(
           if (!orig) return f
           return {
             ...f,
-            x: Math.max(0, Math.min(100, orig.x + deltaX)),
-            y: Math.max(0, Math.min(100, orig.y + deltaY)),
+            x: Math.max(0, Math.min(nativeWidth, orig.x + deltaX)),
+            y: Math.max(0, Math.min(nativeHeight, orig.y + deltaY)),
           }
         })
       )
@@ -556,16 +569,10 @@ export function useFieldEditor(
       const origins = multiDragOrigins.current
       const draggedOrigin = origins.find((o) => o.id === draggingFieldId)
       if (!draggedOrigin || origins.length === 0) {
-        let xPercent =
-          ((touch.clientX - rect.left - dragStartOffset.current.x) /
-            rect.width) *
-          100
-        let yPercent =
-          ((touch.clientY - rect.top - dragStartOffset.current.y) /
-            rect.height) *
-          100
-        xPercent = Math.max(0, Math.min(100, xPercent))
-        yPercent = Math.max(0, Math.min(100, yPercent))
+        let xPx = (touch.clientX - rect.left - dragStartOffset.current.x) / zoom
+        let yPx = (touch.clientY - rect.top - dragStartOffset.current.y) / zoom
+        xPx = Math.max(0, Math.min(nativeWidth, xPx))
+        yPx = Math.max(0, Math.min(nativeHeight, yPx))
         if (snapToGuides) {
           const f = placedFieldsRef.current.find(
             (pf) => pf.id === draggingFieldId
@@ -573,24 +580,19 @@ export function useFieldEditor(
           if (f) {
             const vPts = getGuideSnapPoints("vertical")
             const hPts = getGuideSnapPoints("horizontal")
-            const hPct = ((f.fontSize * 1.5) / rect.height) * 100
-            xPercent = snapWithEdge(xPercent, f.width, vPts)
-            yPercent = snapWithEdge(yPercent, hPct, hPts)
+            xPx = snapWithEdge(xPx, f.width, vPts)
+            yPx = snapWithEdge(yPx, f.fontSize * 1.5, hPts)
           }
         }
         setPlacedFields((prev) =>
           prev.map((f) =>
-            f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f
+            f.id === draggingFieldId ? { ...f, x: xPx, y: yPx } : f
           )
         )
         return
       }
-      let toX =
-        ((touch.clientX - rect.left - dragStartOffset.current.x) / rect.width) *
-        100
-      let toY =
-        ((touch.clientY - rect.top - dragStartOffset.current.y) / rect.height) *
-        100
+      let toX = (touch.clientX - rect.left - dragStartOffset.current.x) / zoom
+      let toY = (touch.clientY - rect.top - dragStartOffset.current.y) / zoom
       if (snapToGuides) {
         const f = placedFieldsRef.current.find(
           (pf) => pf.id === draggingFieldId
@@ -598,9 +600,8 @@ export function useFieldEditor(
         if (f) {
           const vPts = getGuideSnapPoints("vertical")
           const hPts = getGuideSnapPoints("horizontal")
-          const hPct = ((f.fontSize * 1.5) / rect.height) * 100
           toX = snapWithEdge(toX, f.width, vPts)
-          toY = snapWithEdge(toY, hPct, hPts)
+          toY = snapWithEdge(toY, f.fontSize * 1.5, hPts)
         }
       }
       const deltaX = toX - draggedOrigin.x
@@ -611,8 +612,8 @@ export function useFieldEditor(
           if (!orig) return f
           return {
             ...f,
-            x: Math.max(0, Math.min(100, orig.x + deltaX)),
-            y: Math.max(0, Math.min(100, orig.y + deltaY)),
+            x: Math.max(0, Math.min(nativeWidth, orig.x + deltaX)),
+            y: Math.max(0, Math.min(nativeHeight, orig.y + deltaY)),
           }
         })
       )
@@ -639,19 +640,16 @@ export function useFieldEditor(
     if (!resizingFieldId) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      const container = containerRef.current
-      if (!container) return
-      const rect = container.getBoundingClientRect()
-      const deltaXPercent =
-        ((e.clientX - resizeStartPointerX.current) / rect.width) * 100
-      let newWidth = resizeStartWidth.current + deltaXPercent
+      if (!containerRef.current) return
+      const deltaPx = (e.clientX - resizeStartPointerX.current) / zoom
+      let newWidth = resizeStartWidth.current + deltaPx
       const activeField = placedFields.find((f) => f.id === resizingFieldId)
-      const minWidthPercent = activeField
-        ? (activeField.fontSize / 612) * 100
-        : 5
+      const minWidthPx = activeField
+        ? Math.round((activeField.fontSize / 612) * nativeWidth)
+        : 10
       newWidth = Math.max(
-        minWidthPercent,
-        Math.min(100 - (activeField?.x || 0), newWidth)
+        minWidthPx,
+        Math.min(nativeWidth - (activeField?.x || 0), newWidth)
       )
       setPlacedFields((prev) =>
         prev.map((f) =>
@@ -662,21 +660,18 @@ export function useFieldEditor(
 
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault()
-      const container = containerRef.current
-      if (!container) return
+      if (!containerRef.current) return
       const touch = e.touches[0]
       if (!touch) return
-      const rect = container.getBoundingClientRect()
-      const deltaXPercent =
-        ((touch.clientX - resizeStartPointerX.current) / rect.width) * 100
-      let newWidth = resizeStartWidth.current + deltaXPercent
+      const deltaPx = (touch.clientX - resizeStartPointerX.current) / zoom
+      let newWidth = resizeStartWidth.current + deltaPx
       const activeField = placedFields.find((f) => f.id === resizingFieldId)
-      const minWidthPercent = activeField
-        ? (activeField.fontSize / 612) * 100
-        : 5
+      const minWidthPx = activeField
+        ? Math.round((activeField.fontSize / 612) * nativeWidth)
+        : 10
       newWidth = Math.max(
-        minWidthPercent,
-        Math.min(100 - (activeField?.x || 0), newWidth)
+        minWidthPx,
+        Math.min(nativeWidth - (activeField?.x || 0), newWidth)
       )
       setPlacedFields((prev) =>
         prev.map((f) =>
@@ -729,8 +724,8 @@ export function useFieldEditor(
       id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       fieldName: header,
       visible: true,
-      x: pos?.x ?? 40,
-      y: pos?.y ?? 45,
+      x: pos?.x ?? Math.round(nativeWidth * 0.4),
+      y: pos?.y ?? Math.round(nativeHeight * 0.45),
       page: currentPage,
       ...props,
     }
@@ -743,8 +738,8 @@ export function useFieldEditor(
     const newField: PlacedField = {
       ...field,
       id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      x: Math.min(100, field.x + 2),
-      y: Math.min(100, field.y + 2),
+      x: Math.min(nativeWidth, field.x + Math.round(nativeWidth * 0.02)),
+      y: Math.min(nativeHeight, field.y + Math.round(nativeHeight * 0.02)),
     }
     setPlacedFields((prev) => [...prev, newField])
     setSelectedFieldId(newField.id)
@@ -1022,10 +1017,10 @@ export function useFieldEditor(
     const longest = values.reduce((a, b) => (a.length > b.length ? a : b), "")
     const charWidth = 0.6
     const estWidthPx = longest.length * (field.fontSize || 12) * charWidth
-    // Approximate PDF page width in points (612 = US Letter)
-    const pdfPageWidthPts = 612
-    const estWidthPercent = Math.min(95, (estWidthPx / pdfPageWidthPts) * 100)
-    const finalWidth = Math.max(5, Math.round(estWidthPercent * 10) / 10)
+    const finalWidth = Math.max(
+      10,
+      Math.min(nativeWidth, Math.round(estWidthPx))
+    )
     snapshot()
     setPlacedFields((prev) =>
       prev.map((f) => (f.id === field.id ? { ...f, width: finalWidth } : f))

@@ -30,9 +30,9 @@ function getFieldStyle(
   isPreviewMode: boolean
 ): React.CSSProperties {
   const base: React.CSSProperties = {
-    left: `${field.x}%`,
-    top: `${field.y}%`,
-    width: `${field.width}%`,
+    left: `${field.x * zoom}px`,
+    top: `${field.y * zoom}px`,
+    width: `${field.width * zoom}px`,
   }
 
   const align = field.align ?? "left"
@@ -284,8 +284,6 @@ export function EditorCanvas({
       const selBottom = Math.max(start.y, end.y)
       const container = containerRef.current
       if (container) {
-        const cw = container.offsetWidth
-        const ch = container.offsetHeight
         // Select ALL fields intersecting the selection rect
         const hitIds: string[] = []
         for (const f of placedFields) {
@@ -293,9 +291,9 @@ export function EditorCanvas({
           if (f.visible === false) continue
           const fontSizeVal = Math.max(8, (f.fontSize ?? 12) * zoom)
           const fHeight = fontSizeVal * 1.5
-          const fLeft = (f.x / 100) * cw
-          const fTop = (f.y / 100) * ch
-          const fRight = fLeft + (f.width / 100) * cw
+          const fLeft = f.x * zoom
+          const fTop = f.y * zoom
+          const fRight = fLeft + f.width * zoom
           const fBottom = fTop + fHeight
           if (
             fLeft < selRight &&
@@ -370,7 +368,7 @@ export function EditorCanvas({
             <Ruler
               orientation="horizontal"
               containerWidth={pdfDimensions.width || 600}
-              containerHeight={0}
+              containerHeight={pdfDimensions.height || 800}
               zoom={zoom}
               onGuideCreate={onAddGuide}
               onGuidePreview={(p) => {
@@ -392,12 +390,12 @@ export function EditorCanvas({
         {/* Vertical ruler — sticky left */}
         {showRulers && pdfBytes && (
           <div
-            className="sticky left-0 z-50 shrink-0 self-start border-r border-border bg-card"
-            style={{ width: 18, minHeight: pdfDimensions.height || 800 }}
+            className="sticky left-0 z-50 shrink-0 self-start border-r border-border bg-card pt-6"
+            style={{ width: 18, minHeight: (pdfDimensions.height || 800) + 24 }}
           >
             <Ruler
               orientation="vertical"
-              containerWidth={0}
+              containerWidth={pdfDimensions.width || 600}
               containerHeight={pdfDimensions.height || 800}
               zoom={zoom}
               onGuideCreate={onAddGuide}
@@ -434,8 +432,8 @@ export function EditorCanvas({
                 if (!header) return
                 const rect = containerRef.current?.getBoundingClientRect()
                 if (!rect) return
-                const x = ((e.clientX - rect.left) / rect.width) * 100
-                const y = ((e.clientY - rect.top) / rect.height) * 100
+                const x = (e.clientX - rect.left) / zoom
+                const y = (e.clientY - rect.top) / zoom
                 onDropField(header, x, y)
               }}
             >
@@ -625,6 +623,7 @@ export function EditorCanvas({
         ghostPosition={ghostPos}
         ghostOrientation={ghostOrient}
         versionKey={pdfDimensions.width + pdfDimensions.height}
+        zoom={zoom}
       />
     </div>
   )

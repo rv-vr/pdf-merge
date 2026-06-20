@@ -16,8 +16,8 @@ import fontkit from "@pdf-lib/fontkit"
 export interface PlacedField {
   id: string
   fieldName: string
-  x: number // percentage from left of canvas (0 - 100)
-  y: number // percentage from top of canvas (0 - 100)
+  x: number // PDF-native points from left
+  y: number // PDF-native points from top
   page: number // page number (1-indexed)
   font:
     | "Helvetica"
@@ -34,29 +34,27 @@ export interface PlacedField {
   color: string // hex color (e.g. #000000)
   isBold: boolean
   isItalic: boolean
-  width: number // width as percentage of page width (0 - 100)
+  width: number // width in PDF-native points
   align?: "left" | "center" | "right"
   visible?: boolean
   locked?: boolean
 }
 
 /**
- * Translates page percentage coordinates from the screen canvas (top-left origin)
- * into PDF points (bottom-left origin).
+ * Translates canvas coordinates (top-left origin) into PDF points (bottom-left origin).
+ * x/y are stored in PDF-native points.
  */
 export function translateCoordinates(
-  xPercent: number,
-  yPercent: number,
-  pdfWidth: number,
+  x: number,
+  y: number,
+  _pdfWidth: number,
   pdfHeight: number,
   fontSize: number
 ): { x: number; y: number } {
-  // Convert percentage directly to pdf points (top-left x)
-  const x = (xPercent / 100) * pdfWidth
+  void _pdfWidth
   // Canvas y starts at 0 at the top, PDF y starts at 0 at the bottom.
   // The baseline of the text inside the box starts at roughly 95% of font size below the top of the box.
-  const y = pdfHeight - (yPercent / 100) * pdfHeight - fontSize * 0.95
-  return { x, y }
+  return { x, y: pdfHeight - y - fontSize * 0.95 }
 }
 
 /**
@@ -256,7 +254,7 @@ async function generateSingleMergedPDF(
     let x = xOrig
 
     // Apply text alignment within the field box
-    const fieldWidthPts = (field.width / 100) * pdfWidth
+    const fieldWidthPts = field.width
     const align = field.align ?? "left"
     if (align !== "left") {
       const textWidth = font.widthOfTextAtSize(textValue, field.fontSize)
@@ -268,10 +266,10 @@ async function generateSingleMergedPDF(
 
     // Bounding box for clipping path
     const clipX = x
-    const clipWidth = (field.width / 100) * pdfWidth
+    const clipWidth = field.width
     const clipHeight = field.fontSize * 1.2
     // Bounding box Y-bottom (PDF origin is bottom-left)
-    const clipY = pdfHeight - (field.y / 100) * pdfHeight - clipHeight
+    const clipY = pdfHeight - field.y - clipHeight
 
     // Apply clipping path to restrict text rendering inside the box
     page.pushOperators(
@@ -397,7 +395,7 @@ export async function generateCombinedPDF(
       let x = xOrig
 
       // Apply text alignment within the field box
-      const fieldWidthPts = (field.width / 100) * pdfWidth
+      const fieldWidthPts = field.width
       const align = field.align ?? "left"
       if (align !== "left") {
         const textWidth = font.widthOfTextAtSize(textValue, field.fontSize)
@@ -409,10 +407,10 @@ export async function generateCombinedPDF(
 
       // Bounding box for clipping path
       const clipX = x
-      const clipWidth = (field.width / 100) * pdfWidth
+      const clipWidth = field.width
       const clipHeight = field.fontSize * 1.2
       // Bounding box Y-bottom (PDF origin is bottom-left)
-      const clipY = pdfHeight - (field.y / 100) * pdfHeight - clipHeight
+      const clipY = pdfHeight - field.y - clipHeight
 
       // Apply clipping path to restrict text rendering inside the box
       page.pushOperators(

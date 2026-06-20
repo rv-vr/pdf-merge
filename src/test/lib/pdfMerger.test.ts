@@ -13,14 +13,14 @@ describe("translateCoordinates", () => {
 
   it("converts center (50,50) correctly", () => {
     const result = translateCoordinates(50, 50, pdfWidth, pdfHeight, 14)
-    expect(result.x).toBe((50 / 100) * pdfWidth)
-    expect(result.y).toBe(pdfHeight - (50 / 100) * pdfHeight - 14 * 0.95)
+    expect(result.x).toBe(50)
+    expect(result.y).toBe(pdfHeight - 50 - 14 * 0.95)
   })
 
   it("converts bottom-right (100,100) correctly", () => {
     const result = translateCoordinates(100, 100, pdfWidth, pdfHeight, 14)
-    expect(result.x).toBe(pdfWidth)
-    expect(result.y).toBe(pdfHeight - pdfHeight - 14 * 0.95)
+    expect(result.x).toBe(100)
+    expect(result.y).toBe(pdfHeight - 100 - 14 * 0.95)
   })
 
   it("uses fontSize * 0.95 as baseline offset", () => {
@@ -32,7 +32,7 @@ describe("translateCoordinates", () => {
   it("handles different PDF dimensions", () => {
     const result = translateCoordinates(25, 75, 100, 200, 10)
     expect(result.x).toBe(25)
-    expect(result.y).toBe(200 - 150 - 10 * 0.95)
+    expect(result.y).toBe(200 - 75 - 10 * 0.95)
   })
 
   it("handles zero fontSize", () => {

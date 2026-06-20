@@ -44,6 +44,8 @@ interface InspectorProps {
   onMoveFieldForward: (id: string) => void
   onMoveFieldBackward: (id: string) => void
   onAutoFitWidth: () => void
+  nativeWidth: number
+  nativeHeight: number
 }
 
 // Self-contained multi-select inspector with no shared refs
@@ -357,6 +359,8 @@ export function Inspector({
   onMoveFieldForward,
   onMoveFieldBackward,
   onAutoFitWidth,
+  nativeWidth,
+  nativeHeight,
 }: InspectorProps) {
   const colorInputRef = useRef<HTMLInputElement>(null)
 
@@ -734,13 +738,13 @@ export function Inspector({
                 <Input
                   type="number"
                   min={0}
-                  max={100}
-                  step={0.5}
-                  value={Math.round(selectedField.x * 10) / 10}
+                  max={nativeWidth}
+                  step={1}
+                  value={Math.round(selectedField.x)}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value)
                     if (!isNaN(val))
-                      onUpdate({ x: Math.max(0, Math.min(100, val)) })
+                      onUpdate({ x: Math.max(0, Math.min(nativeWidth, val)) })
                   }}
                   onBlur={() => onCommit()}
                   className="h-8 text-center text-xs"
@@ -751,13 +755,13 @@ export function Inspector({
                 <Input
                   type="number"
                   min={0}
-                  max={100}
-                  step={0.5}
-                  value={Math.round(selectedField.y * 10) / 10}
+                  max={nativeHeight}
+                  step={1}
+                  value={Math.round(selectedField.y)}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value)
                     if (!isNaN(val))
-                      onUpdate({ y: Math.max(0, Math.min(100, val)) })
+                      onUpdate({ y: Math.max(0, Math.min(nativeHeight, val)) })
                   }}
                   onBlur={() => onCommit()}
                   className="h-8 text-center text-xs"
@@ -767,14 +771,16 @@ export function Inspector({
                 <Label className="text-xs text-muted-foreground">W</Label>
                 <Input
                   type="number"
-                  min={1}
-                  max={100}
-                  step={0.5}
-                  value={Math.round(selectedField.width * 10) / 10}
+                  min={10}
+                  max={nativeWidth}
+                  step={1}
+                  value={Math.round(selectedField.width)}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value)
                     if (!isNaN(val))
-                      onUpdate({ width: Math.max(1, Math.min(100, val)) })
+                      onUpdate({
+                        width: Math.max(10, Math.min(nativeWidth, val)),
+                      })
                   }}
                   onBlur={() => onCommit()}
                   className="h-8 text-center text-xs"

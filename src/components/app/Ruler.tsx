@@ -12,10 +12,14 @@ interface RulerProps {
   onGuidePreview?: (position: number | null) => void
 }
 
-function computeTickInterval(zoom: number): number {
-  if (zoom >= 1.5) return 2
-  if (zoom >= 0.75) return 5
-  return 10
+function computeTickInterval(nativeLen: number): number {
+  const target = nativeLen / 25
+  const magnitude = Math.pow(10, Math.floor(Math.log10(target)))
+  const norm = target / magnitude
+  if (norm < 1.5) return Math.max(1, Math.round(1 * magnitude))
+  if (norm < 3.5) return Math.max(1, Math.round(2 * magnitude))
+  if (norm < 7.5) return Math.max(1, Math.round(5 * magnitude))
+  return Math.max(1, Math.round(10 * magnitude))
 }
 
 export function Ruler({
@@ -29,23 +33,24 @@ export function Ruler({
   const SIZE = 18
 
   const isHorizontal = orientation === "horizontal"
-  const length = isHorizontal ? containerWidth : containerHeight
-  const tickInterval = computeTickInterval(zoom)
+  const nativeLen = isHorizontal
+    ? containerWidth / zoom
+    : containerHeight / zoom
+  const tickInterval = computeTickInterval(nativeLen)
 
   const draggingRef = useRef(false)
 
   const ticks = useMemo(() => {
     const result: { pos: number; label: string; isMajor: boolean }[] = []
-    for (let i = 0; i <= 100; i += tickInterval) {
-      const px = (i / 100) * length
+    for (let i = 0; i <= nativeLen; i += tickInterval) {
       result.push({
-        pos: px,
+        pos: i * zoom,
         label: String(i),
-        isMajor: i % (tickInterval * 2) === 0 || i === 0 || i === 100,
+        isMajor: i % (tickInterval * 2) === 0 || i === 0 || i === nativeLen,
       })
     }
     return result
-  }, [length, tickInterval])
+  }, [tickInterval, zoom, isHorizontal, containerWidth, containerHeight])
 
   const getPctFromEvent = useCallback(
     (ev: MouseEvent): { pct: number; onCanvas: boolean } | null => {
@@ -54,12 +59,17 @@ export function Ruler({
       ) as HTMLElement | null
       if (!container) return null
       const rect = container.getBoundingClientRect()
-      const pct = isHorizontal
-        ? ((ev.clientY - rect.top) / rect.height) * 100
-        : ((ev.clientX - rect.left) / rect.width) * 100
-      return { pct: Math.round(pct), onCanvas: pct >= 0 && pct <= 100 }
+      const px = isHorizontal
+        ? (ev.clientY - rect.top) / zoom
+        : (ev.clientX - rect.left) / zoom
+      return {
+        pct: Math.round(px),
+        onCanvas:
+          px >= 0 &&
+          px <= (isHorizontal ? containerHeight / zoom : containerWidth / zoom),
+      }
     },
-    [isHorizontal]
+    [isHorizontal, zoom, containerWidth, containerHeight]
   )
 
   const handleMouseDown = useCallback(

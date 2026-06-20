@@ -1,6 +1,6 @@
 export interface Guide {
   id: string
   orientation: "horizontal" | "vertical"
-  position: number
+  position: number // PDF-native points
   page: number
 }

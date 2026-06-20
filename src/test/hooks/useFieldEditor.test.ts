@@ -22,13 +22,13 @@ describe("useFieldEditor", () => {
       expect(result.current.placedFields).toHaveLength(1)
       const field = result.current.placedFields[0]
       expect(field.fieldName).toBe("email")
-      expect(field.x).toBe(40)
-      expect(field.y).toBe(45)
+      expect(field.x).toBe(240)
+      expect(field.y).toBe(360)
       expect(field.page).toBe(currentPage)
       expect(field.font).toBe("Helvetica")
       expect(field.fontSize).toBe(14)
       expect(field.color).toBe("#000000")
-      expect(field.width).toBe(20)
+      expect(field.width).toBe(100)
       expect(field.visible).toBe(true)
       expect(result.current.selectedFieldId).toBe(field.id)
     })
@@ -279,9 +279,8 @@ describe("useFieldEditor", () => {
         { name: "Bob" },
       ]
       act(() => result.current.autoFitWidth(csvRows))
-      // Christopher is longest → estWidthPercent = chr.length * fontSize * 0.6 / 612 * 100
-      const estPct = Math.min(95, ((11 * 14 * 0.6) / 612) * 100)
-      const expected = Math.max(5, Math.round(estPct * 10) / 10)
+      // Christopher is longest → estWidth = 11 * 14 * 0.6 = 92.4
+      const expected = Math.max(10, Math.min(600, Math.round(11 * 14 * 0.6)))
       expect(result.current.placedFields[0].width).toBe(expected)
     })
   })
@@ -307,8 +306,8 @@ describe("useFieldEditor", () => {
       expect(result.current.placedFields).toHaveLength(2)
       const dup = result.current.placedFields[1]
       expect(dup.fieldName).toBe(original.fieldName)
-      expect(dup.x).toBe(original.x + 2)
-      expect(dup.y).toBe(original.y + 2)
+      expect(dup.x).toBe(original.x + Math.round(600 * 0.02))
+      expect(dup.y).toBe(original.y + Math.round(800 * 0.02))
       expect(dup.id).not.toBe(original.id)
     })
   })
