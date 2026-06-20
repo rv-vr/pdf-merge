@@ -1,36 +1,44 @@
-import { 
-  PDFDocument, 
-  rgb, 
-  StandardFonts, 
-  pushGraphicsState, 
-  popGraphicsState, 
-  moveTo, 
-  lineTo, 
-  closePath, 
-  clip, 
-  endPath 
-} from 'pdf-lib';
-import JSZip from 'jszip';
-import fontkit from '@pdf-lib/fontkit';
+import {
+  PDFDocument,
+  rgb,
+  StandardFonts,
+  pushGraphicsState,
+  popGraphicsState,
+  moveTo,
+  lineTo,
+  closePath,
+  clip,
+  endPath,
+} from "pdf-lib"
+import JSZip from "jszip"
+import fontkit from "@pdf-lib/fontkit"
 
 export interface PlacedField {
-  id: string;
-  fieldName: string;
-  x: number; // percentage from left of canvas (0 - 100)
-  y: number; // percentage from top of canvas (0 - 100)
-  page: number; // page number (1-indexed)
-  font: 'Helvetica' | 'Times-Roman' | 'Courier' | 'Arimo' | 'Carlito' | 'EB Garamond' | 'Lora' | 'Open Sans' | 'Open Sans Condensed' | 'Poppins';
-  fontSize: number;
-  color: string; // hex color (e.g. #000000)
-  isBold: boolean;
-  isItalic: boolean;
-  width: number; // width as percentage of page width (0 - 100)
-  align?: 'left' | 'center' | 'right';
-  visible?: boolean;
-  locked?: boolean;
+  id: string
+  fieldName: string
+  x: number // percentage from left of canvas (0 - 100)
+  y: number // percentage from top of canvas (0 - 100)
+  page: number // page number (1-indexed)
+  font:
+    | "Helvetica"
+    | "Times-Roman"
+    | "Courier"
+    | "Arimo"
+    | "Carlito"
+    | "EB Garamond"
+    | "Lora"
+    | "Open Sans"
+    | "Open Sans Condensed"
+    | "Poppins"
+  fontSize: number
+  color: string // hex color (e.g. #000000)
+  isBold: boolean
+  isItalic: boolean
+  width: number // width as percentage of page width (0 - 100)
+  align?: "left" | "center" | "right"
+  visible?: boolean
+  locked?: boolean
 }
-
-
 
 /**
  * Translates page percentage coordinates from the screen canvas (top-left origin)
@@ -44,79 +52,82 @@ export function translateCoordinates(
   fontSize: number
 ): { x: number; y: number } {
   // Convert percentage directly to pdf points (top-left x)
-  const x = (xPercent / 100) * pdfWidth;
+  const x = (xPercent / 100) * pdfWidth
   // Canvas y starts at 0 at the top, PDF y starts at 0 at the bottom.
   // The baseline of the text inside the box starts at roughly 95% of font size below the top of the box.
-  const y = pdfHeight - (yPercent / 100) * pdfHeight - fontSize * 0.95;
-  return { x, y };
+  const y = pdfHeight - (yPercent / 100) * pdfHeight - fontSize * 0.95
+  return { x, y }
 }
 
 /**
  * Helper to parse a hex color string (e.g. "#aa3bff") to rgb values (0.0 - 1.0)
  */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const cleanHex = hex.replace('#', '');
-  const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
-  const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
-  const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+  const cleanHex = hex.replace("#", "")
+  const r = parseInt(cleanHex.substring(0, 2), 16) / 255
+  const g = parseInt(cleanHex.substring(2, 4), 16) / 255
+  const b = parseInt(cleanHex.substring(4, 6), 16) / 255
   return {
     r: isNaN(r) ? 0 : r,
     g: isNaN(g) ? 0 : g,
     b: isNaN(b) ? 0 : b,
-  };
+  }
 }
 
 /**
  * Helper to resolve the correct font style based on parameters
  */
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL
 
-const GOOGLE_FONTS_URLS: Record<string, { regular: string; bold: string; italic: string; boldItalic: string }> = {
-  'Arimo': {
+const GOOGLE_FONTS_URLS: Record<
+  string,
+  { regular: string; bold: string; italic: string; boldItalic: string }
+> = {
+  Arimo: {
     regular: `${base}fonts/Arimo/Arimo-Regular.ttf`,
     bold: `${base}fonts/Arimo/Arimo-Bold.ttf`,
     italic: `${base}fonts/Arimo/Arimo-Italic.ttf`,
-    boldItalic: `${base}fonts/Arimo/Arimo-BoldItalic.ttf`
+    boldItalic: `${base}fonts/Arimo/Arimo-BoldItalic.ttf`,
   },
-  'Carlito': {
+  Carlito: {
     regular: `${base}fonts/Carlito/Carlito-Regular.ttf`,
     bold: `${base}fonts/Carlito/Carlito-Bold.ttf`,
     italic: `${base}fonts/Carlito/Carlito-Italic.ttf`,
-    boldItalic: `${base}fonts/Carlito/Carlito-BoldItalic.ttf`
+    boldItalic: `${base}fonts/Carlito/Carlito-BoldItalic.ttf`,
   },
-  'EB Garamond': {
+  "EB Garamond": {
     regular: `${base}fonts/EB_Garamond/EBGaramond-Regular.ttf`,
     bold: `${base}fonts/EB_Garamond/EBGaramond-Bold.ttf`,
     italic: `${base}fonts/EB_Garamond/EBGaramond-Italic.ttf`,
-    boldItalic: `${base}fonts/EB_Garamond/EBGaramond-BoldItalic.ttf`
+    boldItalic: `${base}fonts/EB_Garamond/EBGaramond-BoldItalic.ttf`,
   },
-  'Lora': {
+  Lora: {
     regular: `${base}fonts/Lora/Lora-Regular.ttf`,
     bold: `${base}fonts/Lora/Lora-Bold.ttf`,
     italic: `${base}fonts/Lora/Lora-Italic.ttf`,
-    boldItalic: `${base}fonts/Lora/Lora-BoldItalic.ttf`
+    boldItalic: `${base}fonts/Lora/Lora-BoldItalic.ttf`,
   },
-  'Open Sans': {
+  "Open Sans": {
     regular: `${base}fonts/Open_Sans/OpenSans-Regular.ttf`,
     bold: `${base}fonts/Open_Sans/OpenSans-Bold.ttf`,
     italic: `${base}fonts/Open_Sans/OpenSans-Italic.ttf`,
-    boldItalic: `${base}fonts/Open_Sans/OpenSans-BoldItalic.ttf`
+    boldItalic: `${base}fonts/Open_Sans/OpenSans-BoldItalic.ttf`,
   },
-  'Open Sans Condensed': {
+  "Open Sans Condensed": {
     regular: `${base}fonts/Open_Sans/OpenSans_Condensed-Regular.ttf`,
     bold: `${base}fonts/Open_Sans/OpenSans_Condensed-Bold.ttf`,
     italic: `${base}fonts/Open_Sans/OpenSans_Condensed-Italic.ttf`,
-    boldItalic: `${base}fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf`
+    boldItalic: `${base}fonts/Open_Sans/OpenSans_Condensed-BoldItalic.ttf`,
   },
-  'Poppins': {
+  Poppins: {
     regular: `${base}fonts/Poppins/Poppins-Regular.ttf`,
     bold: `${base}fonts/Poppins/Poppins-Bold.ttf`,
     italic: `${base}fonts/Poppins/Poppins-Italic.ttf`,
-    boldItalic: `${base}fonts/Poppins/Poppins-BoldItalic.ttf`
-  }
-};
+    boldItalic: `${base}fonts/Poppins/Poppins-BoldItalic.ttf`,
+  },
+}
 
-const fontBytesCache = new Map<string, ArrayBuffer>();
+const fontBytesCache = new Map<string, ArrayBuffer>()
 
 async function getEmbeddedFont(
   pdfDoc: PDFDocument,
@@ -124,52 +135,56 @@ async function getEmbeddedFont(
   isBold: boolean,
   isItalic: boolean
 ) {
-  if (fontType === 'Helvetica' || fontType === 'Times-Roman' || fontType === 'Courier') {
-    let standardName: StandardFonts;
+  if (
+    fontType === "Helvetica" ||
+    fontType === "Times-Roman" ||
+    fontType === "Courier"
+  ) {
+    let standardName: StandardFonts
 
-    if (fontType === 'Helvetica') {
-      if (isBold && isItalic) standardName = StandardFonts.HelveticaBoldOblique;
-      else if (isBold) standardName = StandardFonts.HelveticaBold;
-      else if (isItalic) standardName = StandardFonts.HelveticaOblique;
-      else standardName = StandardFonts.Helvetica;
-    } else if (fontType === 'Times-Roman') {
-      if (isBold && isItalic) standardName = StandardFonts.TimesRomanBoldItalic;
-      else if (isBold) standardName = StandardFonts.TimesRomanBold;
-      else if (isItalic) standardName = StandardFonts.TimesRomanItalic;
-      else standardName = StandardFonts.TimesRoman;
+    if (fontType === "Helvetica") {
+      if (isBold && isItalic) standardName = StandardFonts.HelveticaBoldOblique
+      else if (isBold) standardName = StandardFonts.HelveticaBold
+      else if (isItalic) standardName = StandardFonts.HelveticaOblique
+      else standardName = StandardFonts.Helvetica
+    } else if (fontType === "Times-Roman") {
+      if (isBold && isItalic) standardName = StandardFonts.TimesRomanBoldItalic
+      else if (isBold) standardName = StandardFonts.TimesRomanBold
+      else if (isItalic) standardName = StandardFonts.TimesRomanItalic
+      else standardName = StandardFonts.TimesRoman
     } else {
-      if (isBold && isItalic) standardName = StandardFonts.CourierBoldOblique;
-      else if (isBold) standardName = StandardFonts.CourierBold;
-      else if (isItalic) standardName = StandardFonts.CourierOblique;
-      else standardName = StandardFonts.Courier;
+      if (isBold && isItalic) standardName = StandardFonts.CourierBoldOblique
+      else if (isBold) standardName = StandardFonts.CourierBold
+      else if (isItalic) standardName = StandardFonts.CourierOblique
+      else standardName = StandardFonts.Courier
     }
 
-    return await pdfDoc.embedFont(standardName);
+    return await pdfDoc.embedFont(standardName)
   }
 
-  const fontUrls = GOOGLE_FONTS_URLS[fontType];
+  const fontUrls = GOOGLE_FONTS_URLS[fontType]
   if (!fontUrls) {
-    return await pdfDoc.embedFont(StandardFonts.Helvetica);
+    return await pdfDoc.embedFont(StandardFonts.Helvetica)
   }
 
-  let url = fontUrls.regular;
-  if (isBold && isItalic) url = fontUrls.boldItalic;
-  else if (isBold) url = fontUrls.bold;
-  else if (isItalic) url = fontUrls.italic;
+  let url = fontUrls.regular
+  if (isBold && isItalic) url = fontUrls.boldItalic
+  else if (isBold) url = fontUrls.bold
+  else if (isItalic) url = fontUrls.italic
 
-  const cacheKey = `${fontType}|${isBold}|${isItalic}`;
-  let bytes = fontBytesCache.get(cacheKey);
+  const cacheKey = `${fontType}|${isBold}|${isItalic}`
+  let bytes = fontBytesCache.get(cacheKey)
   if (!bytes) {
-    const response = await fetch(url);
+    const response = await fetch(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch font from ${url}`);
+      throw new Error(`Failed to fetch font from ${url}`)
     }
-    bytes = await response.arrayBuffer();
-    fontBytesCache.set(cacheKey, bytes);
+    bytes = await response.arrayBuffer()
+    fontBytesCache.set(cacheKey, bytes)
   }
 
-  pdfDoc.registerFontkit(fontkit);
-  return await pdfDoc.embedFont(bytes, { subset: true });
+  pdfDoc.registerFontkit(fontkit)
+  return await pdfDoc.embedFont(bytes, { subset: true })
 }
 
 /**
@@ -180,70 +195,83 @@ async function generateSingleMergedPDF(
   row: Record<string, string>,
   fields: PlacedField[]
 ): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.load(templateBytes.slice(0));
-  
+  const pdfDoc = await PDFDocument.load(templateBytes.slice(0))
+
   // Flatten template form fields if they exist to save space and remove interactive widgets
   try {
-    const form = pdfDoc.getForm();
+    const form = pdfDoc.getForm()
     if (form && form.getFields().length > 0) {
-      form.updateFieldAppearances();
-      form.flatten();
+      form.updateFieldAppearances()
+      form.flatten()
     }
   } catch (e) {
-    console.warn('Failed to flatten template form fields:', e);
+    console.warn("Failed to flatten template form fields:", e)
   }
 
-  const pages = pdfDoc.getPages();
+  const pages = pdfDoc.getPages()
 
   // Pre-load all unique font combinations in parallel — avoids await inside the field loop
-  const uniqueFontKeys = [...new Set(fields.map((f) => `${f.font}|${f.isBold}|${f.isItalic}`))];
+  const uniqueFontKeys = [
+    ...new Set(fields.map((f) => `${f.font}|${f.isBold}|${f.isItalic}`)),
+  ]
   const fontEntries = await Promise.all(
     uniqueFontKeys.map(async (key) => {
-      const [fontType, isBoldStr, isItalicStr] = key.split('|');
+      const [fontType, isBoldStr, isItalicStr] = key.split("|")
       const font = await getEmbeddedFont(
         pdfDoc,
         fontType,
-        isBoldStr === 'true',
-        isItalicStr === 'true'
-      );
-      return [key, font] as const;
+        isBoldStr === "true",
+        isItalicStr === "true"
+      )
+      return [key, font] as const
     })
-  );
-  const fontCache = new Map(fontEntries);
+  )
+  const fontCache = new Map(fontEntries)
 
   for (const field of fields) {
-    const pageIndex = field.page - 1;
-    if (pageIndex < 0 || pageIndex >= pages.length) continue;
+    const pageIndex = field.page - 1
+    if (pageIndex < 0 || pageIndex >= pages.length) continue
 
-    const page = pages[pageIndex];
-    const { width: pdfWidth, height: pdfHeight } = page.getSize();
+    const page = pages[pageIndex]
+    const { width: pdfWidth, height: pdfHeight } = page.getSize()
 
     // Resolve the value from the CSV row, fallback to field placeholder name
-    const textValue = row[field.fieldName] !== undefined ? row[field.fieldName] : `{{${field.fieldName}}}`;
+    const textValue =
+      row[field.fieldName] !== undefined
+        ? row[field.fieldName]
+        : `{{${field.fieldName}}}`
 
-    const font = fontCache.get(`${field.font}|${field.isBold}|${field.isItalic}`)!;
+    const font = fontCache.get(
+      `${field.font}|${field.isBold}|${field.isItalic}`
+    )!
 
     // Translate coordinate (canvas top-left percentage -> PDF bottom-left points)
-    const { x: xOrig, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
-    let x = xOrig;
+    const { x: xOrig, y } = translateCoordinates(
+      field.x,
+      field.y,
+      pdfWidth,
+      pdfHeight,
+      field.fontSize
+    )
+    let x = xOrig
 
     // Apply text alignment within the field box
-    const fieldWidthPts = (field.width / 100) * pdfWidth;
-    const align = field.align ?? 'left';
-    if (align !== 'left') {
-      const textWidth = font.widthOfTextAtSize(textValue, field.fontSize);
-      if (align === 'center') x += (fieldWidthPts - textWidth) / 2;
-      else if (align === 'right') x += fieldWidthPts - textWidth;
+    const fieldWidthPts = (field.width / 100) * pdfWidth
+    const align = field.align ?? "left"
+    if (align !== "left") {
+      const textWidth = font.widthOfTextAtSize(textValue, field.fontSize)
+      if (align === "center") x += (fieldWidthPts - textWidth) / 2
+      else if (align === "right") x += fieldWidthPts - textWidth
     }
 
-    const { r, g, b } = hexToRgb(field.color);
+    const { r, g, b } = hexToRgb(field.color)
 
     // Bounding box for clipping path
-    const clipX = x;
-    const clipWidth = (field.width / 100) * pdfWidth;
-    const clipHeight = field.fontSize * 1.2;
+    const clipX = x
+    const clipWidth = (field.width / 100) * pdfWidth
+    const clipHeight = field.fontSize * 1.2
     // Bounding box Y-bottom (PDF origin is bottom-left)
-    const clipY = pdfHeight - (field.y / 100) * pdfHeight - clipHeight;
+    const clipY = pdfHeight - (field.y / 100) * pdfHeight - clipHeight
 
     // Apply clipping path to restrict text rendering inside the box
     page.pushOperators(
@@ -255,7 +283,7 @@ async function generateSingleMergedPDF(
       closePath(),
       clip(),
       endPath()
-    );
+    )
 
     // Draw the text
     page.drawText(textValue, {
@@ -264,13 +292,13 @@ async function generateSingleMergedPDF(
       size: field.fontSize,
       font,
       color: rgb(r, g, b),
-    });
+    })
 
     // Restore graphics state to disable clipping for next page operations
-    page.pushOperators(popGraphicsState());
+    page.pushOperators(popGraphicsState())
   }
 
-  return await pdfDoc.save();
+  return await pdfDoc.save()
 }
 
 /**
@@ -284,94 +312,107 @@ export async function generateCombinedPDF(
   fields: PlacedField[],
   onProgress?: (current: number, total: number) => void
 ): Promise<Uint8Array> {
-  const finalDoc = await PDFDocument.create();
-  const templateDoc = await PDFDocument.load(templateBytes.slice(0));
-  
+  const finalDoc = await PDFDocument.create()
+  const templateDoc = await PDFDocument.load(templateBytes.slice(0))
+
   // Flatten template form fields if they exist to save space and remove interactive widgets
   try {
-    const templateForm = templateDoc.getForm();
+    const templateForm = templateDoc.getForm()
     if (templateForm && templateForm.getFields().length > 0) {
-      templateForm.updateFieldAppearances();
-      templateForm.flatten();
+      templateForm.updateFieldAppearances()
+      templateForm.flatten()
     }
   } catch (e) {
-    console.warn('Failed to flatten template form fields:', e);
+    console.warn("Failed to flatten template form fields:", e)
   }
 
-  const templatePageCount = templateDoc.getPageCount();
-  const total = rows.length;
+  const templatePageCount = templateDoc.getPageCount()
+  const total = rows.length
 
   // Pre-load all unique font combinations in parallel on finalDoc — embeds them exactly once
-  const uniqueFontKeys = [...new Set(fields.map((f) => `${f.font}|${f.isBold}|${f.isItalic}`))];
+  const uniqueFontKeys = [
+    ...new Set(fields.map((f) => `${f.font}|${f.isBold}|${f.isItalic}`)),
+  ]
   const fontEntries = await Promise.all(
     uniqueFontKeys.map(async (key) => {
-      const [fontType, isBoldStr, isItalicStr] = key.split('|');
+      const [fontType, isBoldStr, isItalicStr] = key.split("|")
       const font = await getEmbeddedFont(
         finalDoc,
         fontType,
-        isBoldStr === 'true',
-        isItalicStr === 'true'
-      );
-      return [key, font] as const;
+        isBoldStr === "true",
+        isItalicStr === "true"
+      )
+      return [key, font] as const
     })
-  );
-  const fontCache = new Map(fontEntries);
+  )
+  const fontCache = new Map(fontEntries)
 
   // Construct a repeated indices array to copy all pages in a single call.
   // This allows pdf-lib to share duplicated background images and resources across all copied pages.
-  const repeatedIndices: number[] = [];
+  const repeatedIndices: number[] = []
   for (let i = 0; i < total; i++) {
     for (let p = 0; p < templatePageCount; p++) {
-      repeatedIndices.push(p);
+      repeatedIndices.push(p)
     }
   }
 
-  const copiedPages = await finalDoc.copyPages(templateDoc, repeatedIndices);
+  const copiedPages = await finalDoc.copyPages(templateDoc, repeatedIndices)
   copiedPages.forEach((page) => {
-    finalDoc.addPage(page);
-  });
+    finalDoc.addPage(page)
+  })
 
-  const finalPages = finalDoc.getPages();
+  const finalPages = finalDoc.getPages()
 
   // Draw the text fields for each row
   for (let i = 0; i < total; i++) {
-    const row = rows[i];
-    const pageOffset = i * templatePageCount;
+    const row = rows[i]
+    const pageOffset = i * templatePageCount
 
     for (const field of fields) {
-      const relativePageIndex = field.page - 1;
-      const targetPageIndex = pageOffset + relativePageIndex;
-      if (targetPageIndex < 0 || targetPageIndex >= finalPages.length) continue;
+      const relativePageIndex = field.page - 1
+      const targetPageIndex = pageOffset + relativePageIndex
+      if (targetPageIndex < 0 || targetPageIndex >= finalPages.length) continue
 
-      const page = finalPages[targetPageIndex];
-      const { width: pdfWidth, height: pdfHeight } = page.getSize();
+      const page = finalPages[targetPageIndex]
+      const { width: pdfWidth, height: pdfHeight } = page.getSize()
 
       // Resolve the value from the CSV row, fallback to field placeholder name
-      const textValue = row[field.fieldName] !== undefined ? row[field.fieldName] : `{{${field.fieldName}}}`;
+      const textValue =
+        row[field.fieldName] !== undefined
+          ? row[field.fieldName]
+          : `{{${field.fieldName}}}`
 
-      const font = fontCache.get(`${field.font}|${field.isBold}|${field.isItalic}`)!;
+      const font = fontCache.get(
+        `${field.font}|${field.isBold}|${field.isItalic}`
+      )!
 
       // Translate coordinate (canvas top-left percentage -> PDF bottom-left points)
-    const { x: xOrig, y } = translateCoordinates(field.x, field.y, pdfWidth, pdfHeight, field.fontSize);
-    let x = xOrig;
+      const { x: xOrig, y } = translateCoordinates(
+        field.x,
+        field.y,
+        pdfWidth,
+        pdfHeight,
+        field.fontSize
+      )
+      let x = xOrig
 
       // Apply text alignment within the field box
-      const fieldWidthPts = (field.width / 100) * pdfWidth;
-      const align = field.align ?? 'left';
-      if (align !== 'left') {
-        const textWidth = font.widthOfTextAtSize(textValue, field.fontSize);
-        if (align === 'center') x += (fieldWidthPts - textWidth) / 2;
-        else if (align === 'right') x += fieldWidthPts - textWidth;
+      const fieldWidthPts = (field.width / 100) * pdfWidth
+      const align = field.align ?? "left"
+      if (align !== "left") {
+        const textWidth = font.widthOfTextAtSize(textValue, field.fontSize)
+        if (align === "center") x += (fieldWidthPts - textWidth) / 2
+        else if (align === "right") x += fieldWidthPts - textWidth
       }
 
-      const { r, g, b } = hexToRgb(field.color);
+      const { r, g, b } = hexToRgb(field.color)
 
       // Bounding box for clipping path
-      const clipX = x;
-      const clipWidth = (field.width / 100) * pdfWidth;
-      const clipHeight = field.fontSize * 1.2;
+      const clipX = x
+      const clipWidth = (field.width / 100) * pdfWidth
+      const clipHeight = field.fontSize * 1.2
       // Bounding box Y-bottom (PDF origin is bottom-left)
-      const clipY = pdfHeight - (field.y / 100) * pdfHeight - clipHeight;
+      const clipY = pdfHeight - (field.y / 100) * pdfHeight - clipHeight
 
       // Apply clipping path to restrict text rendering inside the box
       page.pushOperators(
@@ -383,7 +424,7 @@ export async function generateCombinedPDF(
         closePath(),
         clip(),
         endPath()
-      );
+      )
 
       // Draw the text
       page.drawText(textValue, {
@@ -392,34 +433,34 @@ export async function generateCombinedPDF(
         size: field.fontSize,
         font,
         color: rgb(r, g, b),
-      });
+      })
 
       // Restore graphics state to disable clipping for next page operations
-      page.pushOperators(popGraphicsState());
+      page.pushOperators(popGraphicsState())
     }
 
     if (onProgress) {
-      onProgress(i + 1, total);
+      onProgress(i + 1, total)
     }
 
     // Yield execution slightly for UI responsiveness in large jobs
     if (i % 5 === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0))
     }
   }
 
   // Double-check and flatten form fields in the final combined doc as a failsafe
   try {
-    const finalForm = finalDoc.getForm();
+    const finalForm = finalDoc.getForm()
     if (finalForm && finalForm.getFields().length > 0) {
-      finalForm.updateFieldAppearances();
-      finalForm.flatten();
+      finalForm.updateFieldAppearances()
+      finalForm.flatten()
     }
   } catch (e) {
-    console.warn('Failed to flatten final document form fields:', e);
+    console.warn("Failed to flatten final document form fields:", e)
   }
 
-  return await finalDoc.save();
+  return await finalDoc.save()
 }
 
 /**
@@ -432,32 +473,34 @@ export async function generateZIP(
   filenameColumn: string,
   onProgress?: (current: number, total: number) => void
 ): Promise<Blob> {
-  const zip = new JSZip();
-  const total = rows.length;
+  const zip = new JSZip()
+  const total = rows.length
 
   for (let i = 0; i < total; i++) {
-    const row = rows[i];
-    
-    // Generate PDF for this row
-    const pdfBytes = await generateSingleMergedPDF(templateBytes, row, fields);
-    
-    // Determine file name
-    const rawName = row[filenameColumn] ? row[filenameColumn].trim() : `row-${i + 1}`;
-    // Sanitize filename to avoid path traversal / invalid characters
-    const sanitizedName = rawName.replace(/[/\\?%*:|"<>. ]/g, '_');
-    const filename = `${sanitizedName || `row_${i + 1}`}.pdf`;
+    const row = rows[i]
 
-    zip.file(filename, pdfBytes);
+    // Generate PDF for this row
+    const pdfBytes = await generateSingleMergedPDF(templateBytes, row, fields)
+
+    // Determine file name
+    const rawName = row[filenameColumn]
+      ? row[filenameColumn].trim()
+      : `row-${i + 1}`
+    // Sanitize filename to avoid path traversal / invalid characters
+    const sanitizedName = rawName.replace(/[/\\?%*:|"<>. ]/g, "_")
+    const filename = `${sanitizedName || `row_${i + 1}`}.pdf`
+
+    zip.file(filename, pdfBytes)
 
     if (onProgress) {
-      onProgress(i + 1, total);
+      onProgress(i + 1, total)
     }
 
     // Yield execution for UI responsiveness
     if (i % 5 === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0))
     }
   }
 
-  return await zip.generateAsync({ type: 'blob' });
+  return await zip.generateAsync({ type: "blob" })
 }

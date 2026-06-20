@@ -4,17 +4,17 @@ on:
   push:
     branches:
       - main
-      - 'feat/*'
-      - 'fix/*'
-      - 'chore/*'
-      - 'docs/*'
-      - 'refactor/*'
-      - 'test/*'
-      - 'style/*'
-      - 'ci/*'
-      - 'perf/*'
-      - 'build/*'
-      - 'revert/*'
+      - "feat/*"
+      - "fix/*"
+      - "chore/*"
+      - "docs/*"
+      - "refactor/*"
+      - "test/*"
+      - "style/*"
+      - "ci/*"
+      - "perf/*"
+      - "build/*"
+      - "revert/*"
   pull_request:
 
 concurrency:

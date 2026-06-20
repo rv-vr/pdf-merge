@@ -1,1 +1,1 @@
-export type { PlacedField } from '@/lib/pdfMerger';
+export type { PlacedField } from "@/lib/pdfMerger"

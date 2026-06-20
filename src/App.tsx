@@ -1,65 +1,84 @@
-import React, { useState, useEffect, Suspense } from 'react';
-import { pdfjs } from 'react-pdf';
-import { NavBar } from '@/components/app/NavBar';
-import { UploadScreen } from '@/components/app/UploadScreen';
-import { FieldsSidebar } from '@/components/app/FieldsSidebar';
-import { Inspector } from '@/components/app/Inspector';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import React, { useState, useEffect, Suspense } from "react"
+import { pdfjs } from "react-pdf"
+import { NavBar } from "@/components/app/NavBar"
+import { UploadScreen } from "@/components/app/UploadScreen"
+import { FieldsSidebar } from "@/components/app/FieldsSidebar"
+import { Inspector } from "@/components/app/Inspector"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 const EditorCanvas = React.lazy(() =>
-  import('@/components/app/EditorCanvas').then((m) => ({ default: m.EditorCanvas }))
-);
+  import("@/components/app/EditorCanvas").then((m) => ({
+    default: m.EditorCanvas,
+  }))
+)
 const ExportDialog = React.lazy(() =>
-  import('@/components/app/ExportDialog').then((m) => ({ default: m.ExportDialog }))
-);
-import { usePdf } from '@/hooks/usePdf';
-import { useCsv } from '@/hooks/useCsv';
-import { useFieldEditor } from '@/hooks/useFieldEditor';
-import { useExport } from '@/hooks/useExport';
-import { Monitor } from 'lucide-react';
+  import("@/components/app/ExportDialog").then((m) => ({
+    default: m.ExportDialog,
+  }))
+)
+import { usePdf } from "@/hooks/usePdf"
+import { useCsv } from "@/hooks/useCsv"
+import { useFieldEditor } from "@/hooks/useFieldEditor"
+import { useExport } from "@/hooks/useExport"
+import { Monitor } from "lucide-react"
 
-pdfjs.GlobalWorkerOptions.workerSrc = `${import.meta.env.BASE_URL}pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `${import.meta.env.BASE_URL}pdf.worker.min.mjs`
 
-const THEME_STORAGE_KEY = 'pdf-merger-theme';
+const THEME_STORAGE_KEY = "pdf-merger-theme"
 
 export default function App() {
-  const [view, setView] = useState<'upload' | 'editor'>('upload');
+  const [view, setView] = useState<"upload" | "editor">("upload")
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
-  });
+    if (typeof window === "undefined") return false
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === "dark"
+  })
 
-  const pdf = usePdf(view);
-  const csv = useCsv();
-  const fields = useFieldEditor(pdf.currentPage, csv.csvRows.length);
-  const exportState = useExport(pdf.pdfBytes, pdf.pdfFile, csv.csvRows, fields.placedFields, csv.filenameColumn);
+  const pdf = usePdf(view)
+  const csv = useCsv()
+  const fields = useFieldEditor(pdf.currentPage, csv.csvRows.length)
+  const exportState = useExport(
+    pdf.pdfBytes,
+    pdf.pdfFile,
+    csv.csvRows,
+    fields.placedFields,
+    csv.filenameColumn
+  )
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    if (isDarkMode) root.classList.add('dark');
-    else root.classList.remove('dark');
-    window.localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+    const root = window.document.documentElement
+    if (isDarkMode) root.classList.add("dark")
+    else root.classList.remove("dark")
+    window.localStorage.setItem(
+      THEME_STORAGE_KEY,
+      isDarkMode ? "dark" : "light"
+    )
+  }, [isDarkMode])
 
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    pdf.handlePdfUpload(e, fields.resetFields);
-  };
+    pdf.handlePdfUpload(e, fields.resetFields)
+  }
 
-  const selectedFieldIds = fields.selectedFieldIds;
-  const selectedField = fields.placedFields.find((f) => f.id === fields.selectedFieldId);
-  const selectedFields = selectedFieldIds.length > 0
-    ? fields.placedFields.filter((f) => selectedFieldIds.includes(f.id))
-    : [];
-  const primaryField = selectedFieldIds.length > 0
-    ? fields.placedFields.find((f) => f.id === selectedFieldIds[selectedFieldIds.length - 1])
-    : undefined;
+  const selectedFieldIds = fields.selectedFieldIds
+  const selectedField = fields.placedFields.find(
+    (f) => f.id === fields.selectedFieldId
+  )
+  const selectedFields =
+    selectedFieldIds.length > 0
+      ? fields.placedFields.filter((f) => selectedFieldIds.includes(f.id))
+      : []
+  const primaryField =
+    selectedFieldIds.length > 0
+      ? fields.placedFields.find(
+          (f) => f.id === selectedFieldIds[selectedFieldIds.length - 1]
+        )
+      : undefined
 
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024)
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
+    const handler = () => setIsMobile(window.innerWidth < 1024)
+    window.addEventListener("resize", handler)
+    return () => window.removeEventListener("resize", handler)
+  }, [])
 
   return (
     <TooltipProvider>
@@ -68,7 +87,7 @@ export default function App() {
           isDarkMode={isDarkMode}
           onToggleDark={() => setIsDarkMode((current) => !current)}
           canExport={
-            view === 'editor' &&
+            view === "editor" &&
             !!pdf.pdfBytes &&
             csv.csvRows.length > 0 &&
             fields.placedFields.length > 0
@@ -77,12 +96,14 @@ export default function App() {
           view={view}
           pdfFileName={pdf.pdfFile?.name}
           csvRowCount={csv.csvRows.length}
-          onBackToUpload={() => setView('upload')}
+          onBackToUpload={() => setView("upload")}
         />
 
-        {view === 'upload' ? (
+        {view === "upload" ? (
           <div className="relative flex flex-1 flex-col overflow-hidden">
-            <div className={`flex flex-1 flex-col${isMobile ? ' pointer-events-none select-none opacity-30 blur-[2px]' : ''}`}>
+            <div
+              className={`flex flex-1 flex-col${isMobile ? " pointer-events-none select-none opacity-30 blur-[2px]" : ""}`}
+            >
               <UploadScreen
                 pdfFile={pdf.pdfFile}
                 csvFileName={csv.csvFileName}
@@ -90,16 +111,19 @@ export default function App() {
                 csvHeaders={csv.csvHeaders}
                 onPdfUpload={handlePdfUpload}
                 onCsvUpload={csv.handleCsvUpload}
-                onContinue={() => setView('editor')}
+                onContinue={() => setView("editor")}
               />
             </div>
             {isMobile && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8 text-center">
                 <Monitor className="h-12 w-12 text-foreground" />
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-xl font-semibold tracking-tight">Desktop Required</h2>
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Desktop Required
+                  </h2>
                   <p className="max-w-xs text-sm text-muted-foreground">
-                    PDF Data Merger needs a larger screen. Open on a desktop or laptop for the full experience.
+                    PDF Data Merger needs a larger screen. Open on a desktop or
+                    laptop for the full experience.
                   </p>
                 </div>
               </div>
@@ -120,14 +144,22 @@ export default function App() {
               onToggleVisibility={fields.toggleFieldVisibility}
               onToggleLock={fields.toggleFieldLock}
               onToggleFieldSelection={(id) => {
-                const ids = fields.selectedFieldIds;
+                const ids = fields.selectedFieldIds
                 fields.setSelectedFieldIds(
-                  ids.includes(id) ? ids.filter((fid) => fid !== id) : [...ids, id]
-                );
+                  ids.includes(id)
+                    ? ids.filter((fid) => fid !== id)
+                    : [...ids, id]
+                )
               }}
             />
 
-            <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading editor…</div>}>
+            <Suspense
+              fallback={
+                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                  Loading editor…
+                </div>
+              }
+            >
               <EditorCanvas
                 pdfBytes={pdf.pdfBytes}
                 totalPages={pdf.totalPages}
@@ -144,8 +176,8 @@ export default function App() {
                 onPageChange={pdf.setCurrentPage}
                 onZoomChange={pdf.setZoom}
                 onTogglePreview={() => {
-                  fields.setIsPreviewMode(!fields.isPreviewMode);
-                  fields.setSelectedFieldId(null);
+                  fields.setIsPreviewMode(!fields.isPreviewMode)
+                  fields.setSelectedFieldId(null)
                 }}
                 onPreviewRowChange={fields.setPreviewRowIndex}
                 onSelectField={fields.setSelectedFieldId}
@@ -159,8 +191,12 @@ export default function App() {
                 onResizeTouchStart={fields.handleResizeTouchStart}
                 containerRef={fields.containerRef}
                 onLoadSuccess={pdf.setTotalPages}
-                onPageRenderSuccess={(width, height) => pdf.setPdfDimensions({ width, height })}
-                onDropField={(header, x, y) => fields.addFieldToPage(header, { x, y })}
+                onPageRenderSuccess={(width, height) =>
+                  pdf.setPdfDimensions({ width, height })
+                }
+                onDropField={(header, x, y) =>
+                  fields.addFieldToPage(header, { x, y })
+                }
                 snapToGuides={fields.snapToGuides}
                 showRulers={fields.showRulers}
                 onSnapToGuidesChange={fields.setSnapToGuides}
@@ -209,5 +245,5 @@ export default function App() {
         </Suspense>
       </div>
     </TooltipProvider>
-  );
+  )
 }

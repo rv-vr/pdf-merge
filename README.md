@@ -5,10 +5,12 @@ A free, 100% client-side tool to mail-merge structured CSV data into a PDF templ
 ## How it works
 
 ### What you need:
+
 - A data table in CSV format (`.csv`)
 - A template document in PDF format (`.pdf`)
 
 ### Steps:
+
 1. **Upload** your PDF template and CSV data.
 2. **Add fields** to the preview canvas by dragging CSV column headers.
 3. **Style fields** by adjusting font family, size, color, and alignment in the editor panel.
@@ -19,6 +21,7 @@ A free, 100% client-side tool to mail-merge structured CSV data into a PDF templ
 ## Local Development
 
 ### Prerequisites
+
 - Node.js ≥ 18
 
 ### Setup

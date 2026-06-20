@@ -1,24 +1,27 @@
-import { describe, it, expect } from 'vitest';
-import { cn } from '@/lib/utils';
+import { describe, it, expect } from "vitest"
+import { cn } from "@/lib/utils"
 
-describe('cn', () => {
-  it('merges class names', () => {
-    expect(cn('foo', 'bar')).toBe('foo bar');
-  });
+describe("cn", () => {
+  it("merges class names", () => {
+    expect(cn("foo", "bar")).toBe("foo bar")
+  })
 
-  it('handles conditional classes', () => {
-    expect(cn('base', false && 'hidden', 'visible')).toBe('base visible');
-  });
+  it("handles conditional classes", () => {
+    const falsy = false
+    const truthy = "visible"
+    expect(cn("base", falsy && "hidden", truthy)).toBe("base visible")
+  })
 
-  it('resolves tailwind conflicts (last wins)', () => {
-    expect(cn('px-4', 'px-2')).toBe('px-2');
-  });
+  it("resolves tailwind conflicts (last wins)", () => {
+    expect(cn("px-4", "px-2")).toBe("px-2")
+  })
 
-  it('handles empty inputs', () => {
-    expect(cn()).toBe('');
-  });
+  it("handles empty inputs", () => {
+    expect(cn()).toBe("")
+  })
 
-  it('handles undefined / null / 0', () => {
-    expect(cn('a', undefined, null, 0 && 'b')).toBe('a');
-  });
-});
+  it("handles undefined / null / 0", () => {
+    const zero = 0
+    expect(cn("a", undefined, null, zero && "b")).toBe("a")
+  })
+})

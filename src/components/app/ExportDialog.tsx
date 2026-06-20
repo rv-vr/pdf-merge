@@ -1,40 +1,46 @@
-import { useState } from 'react';
-import { Download, FileText, Archive, Loader2, CheckCircle2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
+import { useState } from "react"
+import {
+  Download,
+  FileText,
+  Archive,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
-type ExportMode = 'combined' | 'zip';
+type ExportMode = "combined" | "zip"
 
 interface ExportDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  csvHeaders: string[];
-  csvRows: Record<string, string>[];
-  pdfFile: File | null;
-  filenameColumn: string;
-  onFilenameColumnChange: (col: string) => void;
-  isProcessing: boolean;
-  processingProgress: { current: number; total: number };
-  processingMessage: string;
-  onDownloadCombined: () => void;
-  onDownloadZip: () => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  csvHeaders: string[]
+  csvRows: Record<string, string>[]
+  pdfFile: File | null
+  filenameColumn: string
+  onFilenameColumnChange: (col: string) => void
+  isProcessing: boolean
+  processingProgress: { current: number; total: number }
+  processingMessage: string
+  onDownloadCombined: () => void
+  onDownloadZip: () => void
 }
 
 export function ExportDialog({
@@ -51,35 +57,38 @@ export function ExportDialog({
   onDownloadCombined,
   onDownloadZip,
 }: ExportDialogProps) {
-  const [mode, setMode] = useState<ExportMode>('zip');
+  const [mode, setMode] = useState<ExportMode>("zip")
 
   const isDone =
     !isProcessing &&
     processingProgress.current > 0 &&
-    processingProgress.current === processingProgress.total;
+    processingProgress.current === processingProgress.total
 
-  const isRunning = isProcessing;
-  const isConfig = !isRunning && !isDone;
+  const isRunning = isProcessing
+  const isConfig = !isRunning && !isDone
 
   const progressPct =
     processingProgress.total > 0
-      ? Math.round((processingProgress.current / processingProgress.total) * 100)
-      : 0;
+      ? Math.round(
+          (processingProgress.current / processingProgress.total) * 100
+        )
+      : 0
 
-  const sampleName = filenameColumn && csvRows[0]?.[filenameColumn]
-    ? String(csvRows[0][filenameColumn])
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-    : 'record';
+  const sampleName =
+    filenameColumn && csvRows[0]?.[filenameColumn]
+      ? String(csvRows[0][filenameColumn])
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")
+      : "record"
 
   const handleExport = () => {
-    if (mode === 'combined') {
-      onDownloadCombined();
+    if (mode === "combined") {
+      onDownloadCombined()
     } else {
-      onDownloadZip();
+      onDownloadZip()
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -92,9 +101,11 @@ export function ExportDialog({
                 Export merged PDFs
               </DialogTitle>
               <DialogDescription>
-                Generating{' '}
-                <strong className="text-foreground">{csvRows.length} documents</strong> from{' '}
-                {pdfFile?.name ?? 'template'}.
+                Generating{" "}
+                <strong className="text-foreground">
+                  {csvRows.length} documents
+                </strong>{" "}
+                from {pdfFile?.name ?? "template"}.
               </DialogDescription>
             </DialogHeader>
 
@@ -106,31 +117,36 @@ export function ExportDialog({
                   {/* Single PDF option */}
                   <button
                     type="button"
-                    onClick={() => setMode('combined')}
+                    onClick={() => setMode("combined")}
                     className={cn(
-                      'flex gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent/50',
-                      mode === 'combined'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border bg-background'
+                      "flex gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent/50",
+                      mode === "combined"
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-background"
                     )}
                   >
                     <span
                       className={cn(
-                        'mt-0.5 flex size-4 shrink-0 rounded-full border-2 items-center justify-center',
-                        mode === 'combined' ? 'border-primary' : 'border-muted-foreground/40'
+                        "mt-0.5 flex size-4 shrink-0 rounded-full border-2 items-center justify-center",
+                        mode === "combined"
+                          ? "border-primary"
+                          : "border-muted-foreground/40"
                       )}
                     >
-                      {mode === 'combined' && (
+                      {mode === "combined" && (
                         <span className="size-2 rounded-full bg-primary" />
                       )}
                     </span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <FileText className="size-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">Single combined PDF</span>
+                        <span className="text-sm font-semibold">
+                          Single combined PDF
+                        </span>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        All {csvRows.length} records in one file, one record per page.
+                        All {csvRows.length} records in one file, one record per
+                        page.
                       </p>
                     </div>
                   </button>
@@ -138,28 +154,32 @@ export function ExportDialog({
                   {/* ZIP option */}
                   <button
                     type="button"
-                    onClick={() => setMode('zip')}
+                    onClick={() => setMode("zip")}
                     className={cn(
-                      'flex gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent/50',
-                      mode === 'zip'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border bg-background'
+                      "flex gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent/50",
+                      mode === "zip"
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-background"
                     )}
                   >
                     <span
                       className={cn(
-                        'mt-0.5 flex size-4 shrink-0 rounded-full border-2 items-center justify-center',
-                        mode === 'zip' ? 'border-primary' : 'border-muted-foreground/40'
+                        "mt-0.5 flex size-4 shrink-0 rounded-full border-2 items-center justify-center",
+                        mode === "zip"
+                          ? "border-primary"
+                          : "border-muted-foreground/40"
                       )}
                     >
-                      {mode === 'zip' && (
+                      {mode === "zip" && (
                         <span className="size-2 rounded-full bg-primary" />
                       )}
                     </span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Archive className="size-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">ZIP of separate PDFs</span>
+                        <span className="text-sm font-semibold">
+                          ZIP of separate PDFs
+                        </span>
                         <Badge variant="secondary" className="text-[10px]">
                           Recommended
                         </Badge>
@@ -175,12 +195,15 @@ export function ExportDialog({
               {/* Filename column (ZIP mode only) */}
               <div
                 className={cn(
-                  'flex flex-col gap-2 transition-opacity',
-                  mode !== 'zip' && 'pointer-events-none opacity-40'
+                  "flex flex-col gap-2 transition-opacity",
+                  mode !== "zip" && "pointer-events-none opacity-40"
                 )}
               >
                 <Label>Filename column</Label>
-                <Select value={filenameColumn} onValueChange={onFilenameColumnChange}>
+                <Select
+                  value={filenameColumn}
+                  onValueChange={onFilenameColumnChange}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a column…" />
                   </SelectTrigger>
@@ -195,7 +218,7 @@ export function ExportDialog({
                 {filenameColumn && (
                   <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
                     <FileText className="size-3 shrink-0" />
-                    {sampleName || 'record'}.pdf
+                    {sampleName || "record"}.pdf
                   </div>
                 )}
               </div>
@@ -209,7 +232,7 @@ export function ExportDialog({
               </Button>
               <Button
                 onClick={handleExport}
-                disabled={mode === 'zip' && !filenameColumn}
+                disabled={mode === "zip" && !filenameColumn}
                 className="gap-2"
               >
                 <Download className="size-4" />
@@ -223,9 +246,12 @@ export function ExportDialog({
           <div className="flex flex-col items-center gap-5 py-6 text-center">
             <Loader2 className="size-12 animate-spin text-primary" />
             <div>
-              <p className="text-base font-semibold">{processingMessage || 'Rendering documents…'}</p>
+              <p className="text-base font-semibold">
+                {processingMessage || "Rendering documents…"}
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {processingProgress.current} of {processingProgress.total} merged
+                {processingProgress.current} of {processingProgress.total}{" "}
+                merged
               </p>
             </div>
             <div className="h-2 w-full rounded-full bg-muted">
@@ -251,14 +277,14 @@ export function ExportDialog({
             <div>
               <p className="text-lg font-semibold">Export complete</p>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                {mode === 'zip' ? (
+                {mode === "zip" ? (
                   <>
-                    {csvRows.length} PDFs bundled into{' '}
+                    {csvRows.length} PDFs bundled into{" "}
                     <code className="font-mono">certificates.zip</code>
                   </>
                 ) : (
                   <>
-                    {csvRows.length}-page{' '}
+                    {csvRows.length}-page{" "}
                     <code className="font-mono">merged.pdf</code> ready
                   </>
                 )}
@@ -270,12 +296,12 @@ export function ExportDialog({
               </Button>
               <Button className="gap-2" onClick={() => onOpenChange(false)}>
                 <Download className="size-4" />
-                Download {mode === 'zip' ? '.zip' : '.pdf'}
+                Download {mode === "zip" ? ".zip" : ".pdf"}
               </Button>
             </div>
           </div>
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

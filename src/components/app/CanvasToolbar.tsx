@@ -1,39 +1,51 @@
-import { Eye, EyeOff, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Trash2, Undo2, Redo2, Magnet, Ruler } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import {
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Trash2,
+  Undo2,
+  Redo2,
+  Magnet,
+  Ruler,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import type { PlacedField } from '@/types';
+} from "@/components/ui/select"
+import type { PlacedField } from "@/types"
 
-const ZOOM_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+const ZOOM_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 
 interface CanvasToolbarProps {
-  isPreviewMode: boolean;
-  csvRows: Record<string, string>[];
-  previewRowIndex: number;
-  totalPages: number;
-  currentPage: number;
-  zoom: number;
-  placedFields: PlacedField[];
-  canUndo: boolean;
-  canRedo: boolean;
-  onTogglePreview: () => void;
-  onPreviewRowChange: (index: number) => void;
-  onPageChange: (page: number) => void;
-  onZoomChange: (zoom: number) => void;
-  onClearAllFields: () => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  snapToGuides: boolean;
-  showRulers: boolean;
-  onSnapToGuidesChange: (v: boolean) => void;
-  onShowRulersChange: (v: boolean) => void;
+  isPreviewMode: boolean
+  csvRows: Record<string, string>[]
+  previewRowIndex: number
+  totalPages: number
+  currentPage: number
+  zoom: number
+  placedFields: PlacedField[]
+  canUndo: boolean
+  canRedo: boolean
+  onTogglePreview: () => void
+  onPreviewRowChange: (index: number) => void
+  onPageChange: (page: number) => void
+  onZoomChange: (zoom: number) => void
+  onClearAllFields: () => void
+  onUndo: () => void
+  onRedo: () => void
+  snapToGuides: boolean
+  showRulers: boolean
+  onSnapToGuidesChange: (v: boolean) => void
+  onShowRulersChange: (v: boolean) => void
 }
 
 export function CanvasToolbar({
@@ -58,26 +70,32 @@ export function CanvasToolbar({
   onSnapToGuidesChange,
   onShowRulersChange,
 }: CanvasToolbarProps) {
-  const currentZoomIdx = ZOOM_STEPS.indexOf(zoom);
-  const canZoomOut = currentZoomIdx > 0;
-  const canZoomIn = currentZoomIdx < ZOOM_STEPS.length - 1;
+  const currentZoomIdx = ZOOM_STEPS.indexOf(zoom)
+  const canZoomOut = currentZoomIdx > 0
+  const canZoomIn = currentZoomIdx < ZOOM_STEPS.length - 1
 
   return (
     <div className="flex h-13 shrink-0 items-center gap-2 border-b border-border bg-card px-3">
       <Button
-        variant={isPreviewMode ? 'default' : 'outline'}
+        variant={isPreviewMode ? "default" : "outline"}
         size="sm"
         onClick={onTogglePreview}
         className="gap-1.5"
       >
-        {isPreviewMode ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-        Preview: {isPreviewMode ? 'ON' : 'OFF'}
+        {isPreviewMode ? (
+          <Eye className="size-3.5" />
+        ) : (
+          <EyeOff className="size-3.5" />
+        )}
+        Preview: {isPreviewMode ? "ON" : "OFF"}
       </Button>
 
       {isPreviewMode && csvRows.length > 0 && (
         <div className="flex animate-in fade-in items-center gap-1.5">
           <Separator orientation="vertical" />
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">Row</span>
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            Row
+          </span>
           <Button
             variant="outline"
             size="icon"
@@ -96,13 +114,14 @@ export function CanvasToolbar({
             </SelectTrigger>
             <SelectContent position="popper">
               {csvRows.map((row, i) => {
-                const firstVal = String(Object.values(row)[0] ?? '');
-                const label = firstVal.length > 22 ? firstVal.slice(0, 22) + '…' : firstVal;
+                const firstVal = String(Object.values(row)[0] ?? "")
+                const label =
+                  firstVal.length > 22 ? firstVal.slice(0, 22) + "…" : firstVal
                 return (
                   <SelectItem key={i} value={String(i)} className="text-xs">
                     {i + 1} · {label}
                   </SelectItem>
-                );
+                )
               })}
             </SelectContent>
           </Select>
@@ -111,7 +130,11 @@ export function CanvasToolbar({
             size="icon"
             className="size-7 shrink-0"
             disabled={previewRowIndex === csvRows.length - 1}
-            onClick={() => onPreviewRowChange(Math.min(csvRows.length - 1, previewRowIndex + 1))}
+            onClick={() =>
+              onPreviewRowChange(
+                Math.min(csvRows.length - 1, previewRowIndex + 1)
+              )
+            }
           >
             <ChevronRight className="size-3.5" />
           </Button>
@@ -126,16 +149,16 @@ export function CanvasToolbar({
           <Separator orientation="vertical" />
           <div className="flex items-center gap-0.5">
             <Button
-              variant={snapToGuides ? 'default' : 'ghost'}
+              variant={snapToGuides ? "default" : "ghost"}
               size="icon"
               className="size-7"
               onClick={() => onSnapToGuidesChange(!snapToGuides)}
-              title={`Snap to guides ${snapToGuides ? 'ON' : 'OFF'}`}
+              title={`Snap to guides ${snapToGuides ? "ON" : "OFF"}`}
             >
               <Magnet className="size-3.5" />
             </Button>
             <Button
-              variant={showRulers ? 'default' : 'ghost'}
+              variant={showRulers ? "default" : "ghost"}
               size="icon"
               className="size-7"
               onClick={() => onShowRulersChange(!showRulers)}
@@ -192,18 +215,20 @@ export function CanvasToolbar({
               variant="ghost"
               size="icon"
               className="size-7"
-              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+              onClick={() =>
+                onPageChange(Math.min(totalPages, currentPage + 1))
+              }
               disabled={currentPage === totalPages}
             >
               <ChevronRight className="size-3.5" />
             </Button>
           </div>
-          <Separator orientation="vertical"  />
+          <Separator orientation="vertical" />
         </>
       )}
 
       <Badge variant="outline" className="gap-1 text-xs">
-        {placedFields.length} field{placedFields.length !== 1 ? 's' : ''}
+        {placedFields.length} field{placedFields.length !== 1 ? "s" : ""}
       </Badge>
 
       {placedFields.length > 0 && (
@@ -218,14 +243,16 @@ export function CanvasToolbar({
         </Button>
       )}
 
-      <Separator orientation="vertical"  />
+      <Separator orientation="vertical" />
 
       <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="icon"
           className="size-7"
-          onClick={() => canZoomOut && onZoomChange(ZOOM_STEPS[currentZoomIdx - 1])}
+          onClick={() =>
+            canZoomOut && onZoomChange(ZOOM_STEPS[currentZoomIdx - 1])
+          }
           disabled={!canZoomOut}
           title="Zoom out"
         >
@@ -238,7 +265,9 @@ export function CanvasToolbar({
           variant="ghost"
           size="icon"
           className="size-7"
-          onClick={() => canZoomIn && onZoomChange(ZOOM_STEPS[currentZoomIdx + 1])}
+          onClick={() =>
+            canZoomIn && onZoomChange(ZOOM_STEPS[currentZoomIdx + 1])
+          }
           disabled={!canZoomIn}
           title="Zoom in"
         >
@@ -246,5 +275,5 @@ export function CanvasToolbar({
         </Button>
       </div>
     </div>
-  );
+  )
 }
