@@ -43,7 +43,7 @@ function DevCard({ dev, user, loading }: DevCardProps) {
               alt={user?.name ?? dev.username}
               className="size-16 rounded-full border-2 border-border object-cover ring-2 ring-primary/20 ring-offset-2 ring-offset-background transition-all duration-300 hover:ring-primary/60"
             />
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary">
+            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary-foreground">
               {dev.role}
             </span>
           </div>
