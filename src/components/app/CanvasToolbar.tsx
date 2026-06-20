@@ -1,4 +1,4 @@
-import { Eye, EyeOff, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Trash2, Undo2, Redo2 } from 'lucide-react';
+import { Eye, EyeOff, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Trash2, Undo2, Redo2, Magnet, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -30,6 +30,10 @@ interface CanvasToolbarProps {
   onClearAllFields: () => void;
   onUndo: () => void;
   onRedo: () => void;
+  snapToGuides: boolean;
+  showRulers: boolean;
+  onSnapToGuidesChange: (v: boolean) => void;
+  onShowRulersChange: (v: boolean) => void;
 }
 
 export function CanvasToolbar({
@@ -49,6 +53,10 @@ export function CanvasToolbar({
   onClearAllFields,
   onUndo,
   onRedo,
+  snapToGuides,
+  showRulers,
+  onSnapToGuidesChange,
+  onShowRulersChange,
 }: CanvasToolbarProps) {
   const currentZoomIdx = ZOOM_STEPS.indexOf(zoom);
   const canZoomOut = currentZoomIdx > 0;
@@ -113,7 +121,31 @@ export function CanvasToolbar({
         </div>
       )}
 
-      <Separator orientation="vertical"  />
+      <Separator orientation="vertical" />
+
+      {/* Snap / Ruler toggles */}
+      <div className="flex items-center gap-0.5">
+        <Button
+          variant={snapToGuides ? 'default' : 'ghost'}
+          size="icon"
+          className="size-7"
+          onClick={() => onSnapToGuidesChange(!snapToGuides)}
+          title={`Snap to guides ${snapToGuides ? 'ON' : 'OFF'}`}
+        >
+          <Magnet className="size-3.5" />
+        </Button>
+        <Button
+          variant={showRulers ? 'default' : 'ghost'}
+          size="icon"
+          className="size-7"
+          onClick={() => onShowRulersChange(!showRulers)}
+          title="Toggle rulers"
+        >
+          <Ruler className="size-3.5" />
+        </Button>
+      </div>
+
+      <Separator orientation="vertical" />
 
       {/* Undo / Redo */}
       <div className="flex items-center gap-0.5">

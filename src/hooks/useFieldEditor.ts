@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { PlacedField } from '@/types';
+import type { Guide } from '@/lib/editorTypes';
 
 type FieldProps = {
   font: 'Helvetica' | 'Times-Roman' | 'Courier' | 'Arimo' | 'Carlito' | 'EB Garamond' | 'Lora' | 'Open Sans' | 'Open Sans Condensed' | 'Poppins';
@@ -32,6 +33,9 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
   const [resizingFieldId, setResizingFieldId] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewRowIndex, setPreviewRowIndex] = useState(0);
+  const [guides, setGuides] = useState<Guide[]>([]);
+  const [snapToGuides, setSnapToGuides] = useState(true);
+  const [showRulers, setShowRulers] = useState(true);
 
   // Undo / Redo stacks (max 50 entries each)
   const [undoStack, setUndoStack] = useState<PlacedField[][]>([]);
@@ -58,6 +62,28 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
 
   const filterLockedIds = (ids: string[]) =>
     ids.filter((id) => !placedFieldsRef.current.find((f) => f.id === id)?.locked);
+
+  const getGuideSnapPoints = useCallback((orientation?: 'horizontal' | 'vertical') => {
+    const pts = guides
+      .filter((g) => g.page === currentPage && (!orientation || g.orientation === orientation))
+      .map((g) => g.position);
+    pts.push(0, 100);
+    return pts;
+  }, [guides, currentPage]);
+
+  const snapWithEdge = useCallback((value: number, edgeOffset: number, snapPoints: number[]): number => {
+    const threshold = 3;
+    let best = value;
+    let bestDist = threshold;
+    for (const pt of snapPoints) {
+      const ld = Math.abs(value - pt);
+      if (ld < bestDist) { bestDist = ld; best = pt; }
+      const td = Math.abs(value + edgeOffset - pt);
+      const adj = pt - edgeOffset;
+      if (td < bestDist) { bestDist = td; best = adj; }
+    }
+    return best;
+  }, []);
 
   const canUndo = undoStack.length > 0;
   const canRedo = redoStack.length > 0;
@@ -308,8 +334,8 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
               ids.includes(f.id)
                 ? {
                     ...f,
-                    x: Math.max(0, Math.min(100, f.x + dx)),
-                    y: Math.max(0, Math.min(100, f.y + dy)),
+                    x: Math.max(0, Math.min(100, snapToGuides ? snapWithEdge(f.x + dx, f.width, getGuideSnapPoints('vertical')) : f.x + dx)),
+                    y: Math.max(0, Math.min(100, snapToGuides ? snapWithEdge(f.y + dy, (f.fontSize * 1.5 / (containerRef.current?.getBoundingClientRect().height ?? 800)) * 100, getGuideSnapPoints('horizontal')) : f.y + dy)),
                   }
                 : f
             )
@@ -343,13 +369,33 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
         let yPercent = ((e.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
         xPercent = Math.max(0, Math.min(100, xPercent));
         yPercent = Math.max(0, Math.min(100, yPercent));
+        if (snapToGuides) {
+          const f = placedFieldsRef.current.find((pf) => pf.id === draggingFieldId);
+          if (f) {
+            const vPts = getGuideSnapPoints('vertical');
+            const hPts = getGuideSnapPoints('horizontal');
+            const hPct = (f.fontSize * 1.5 / rect.height) * 100;
+            xPercent = snapWithEdge(xPercent, f.width, vPts);
+            yPercent = snapWithEdge(yPercent, hPct, hPts);
+          }
+        }
         setPlacedFields((prev) =>
           prev.map((f) => (f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f))
         );
         return;
       }
-      const toX = ((e.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
-      const toY = ((e.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
+      let toX = ((e.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
+      let toY = ((e.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
+      if (snapToGuides) {
+        const f = placedFieldsRef.current.find((pf) => pf.id === draggingFieldId);
+        if (f) {
+          const vPts = getGuideSnapPoints('vertical');
+          const hPts = getGuideSnapPoints('horizontal');
+          const hPct = (f.fontSize * 1.5 / rect.height) * 100;
+          toX = snapWithEdge(toX, f.width, vPts);
+          toY = snapWithEdge(toY, hPct, hPts);
+        }
+      }
       const deltaX = toX - draggedOrigin.x;
       const deltaY = toY - draggedOrigin.y;
       setPlacedFields((prev) =>
@@ -379,13 +425,33 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
         let yPercent = ((touch.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
         xPercent = Math.max(0, Math.min(100, xPercent));
         yPercent = Math.max(0, Math.min(100, yPercent));
+        if (snapToGuides) {
+          const f = placedFieldsRef.current.find((pf) => pf.id === draggingFieldId);
+          if (f) {
+            const vPts = getGuideSnapPoints('vertical');
+            const hPts = getGuideSnapPoints('horizontal');
+            const hPct = (f.fontSize * 1.5 / rect.height) * 100;
+            xPercent = snapWithEdge(xPercent, f.width, vPts);
+            yPercent = snapWithEdge(yPercent, hPct, hPts);
+          }
+        }
         setPlacedFields((prev) =>
           prev.map((f) => (f.id === draggingFieldId ? { ...f, x: xPercent, y: yPercent } : f))
         );
         return;
       }
-      const toX = ((touch.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
-      const toY = ((touch.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
+      let toX = ((touch.clientX - rect.left - dragStartOffset.current.x) / rect.width) * 100;
+      let toY = ((touch.clientY - rect.top - dragStartOffset.current.y) / rect.height) * 100;
+      if (snapToGuides) {
+        const f = placedFieldsRef.current.find((pf) => pf.id === draggingFieldId);
+        if (f) {
+          const vPts = getGuideSnapPoints('vertical');
+          const hPts = getGuideSnapPoints('horizontal');
+          const hPct = (f.fontSize * 1.5 / rect.height) * 100;
+          toX = snapWithEdge(toX, f.width, vPts);
+          toY = snapWithEdge(toY, hPct, hPts);
+        }
+      }
       const deltaX = toX - draggedOrigin.x;
       const deltaY = toY - draggedOrigin.y;
       setPlacedFields((prev) =>
@@ -753,6 +819,26 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
     );
   };
 
+  const addGuide = (orientation: Guide['orientation'], position: number) => {
+    const newGuide: Guide = {
+      id: `guide-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      orientation,
+      position,
+      page: currentPage,
+    };
+    setGuides((prev) => [...prev, newGuide]);
+  };
+
+  const removeGuide = (id: string) => {
+    setGuides((prev) => prev.filter((g) => g.id !== id));
+  };
+
+  const updateGuidePosition = (id: string, position: number) => {
+    setGuides((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, position } : g))
+    );
+  };
+
   const resetFields = () => {
     setPlacedFields([]);
     setSelectedFieldId(null);
@@ -789,6 +875,10 @@ export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0
     toggleFieldLock,
     toggleFieldVisibility,
     autoFitWidth,
+    guides,
+    snapToGuides, setSnapToGuides,
+    showRulers, setShowRulers,
+    addGuide, removeGuide, updateGuidePosition,
     copyStyle,
     pasteStyle,
     undo,

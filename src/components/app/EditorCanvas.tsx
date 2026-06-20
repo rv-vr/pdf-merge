@@ -7,6 +7,8 @@ import type { PlacedField } from '@/types';
 import { cn } from '@/lib/utils';
 import { CanvasToolbar } from '@/components/app/CanvasToolbar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Ruler } from '@/components/app/Ruler';
+import { GuidesOverlay } from '@/components/app/GuidesOverlay';
 
 function fontFamilyFor(font: PlacedField['font']): string {
   if (font === 'Arimo') return 'Arimo, Arial, sans-serif';
@@ -142,6 +144,14 @@ interface EditorCanvasProps {
   onLoadSuccess: (totalPages: number) => void;
   onPageRenderSuccess: (width: number, height: number) => void;
   onDropField?: (header: string, x: number, y: number) => void;
+  snapToGuides: boolean;
+  showRulers: boolean;
+  onSnapToGuidesChange: (v: boolean) => void;
+  onShowRulersChange: (v: boolean) => void;
+  guides: import('@/lib/editorTypes').Guide[];
+  onAddGuide: (orientation: 'horizontal' | 'vertical', position: number) => void;
+  onRemoveGuide: (id: string) => void;
+  onUpdateGuidePosition: (id: string, position: number) => void;
 }
 
 export function EditorCanvas({
@@ -174,6 +184,14 @@ export function EditorCanvas({
   onLoadSuccess,
   onPageRenderSuccess,
   onDropField,
+  snapToGuides,
+  showRulers,
+  onSnapToGuidesChange,
+  onShowRulersChange,
+  guides,
+  onAddGuide,
+  onRemoveGuide,
+  onUpdateGuidePosition,
 }: EditorCanvasProps) {
   const memoizedFile = React.useMemo(() => {
     return pdfBytes ? pdfBytes.slice(0) : null;
@@ -182,6 +200,8 @@ export function EditorCanvas({
   // Marquee selection state
   const [marqueeRect, setMarqueeRect] = React.useState<{left: number; top: number; width: number; height: number} | null>(null);
   const marqueeStartRef = React.useRef<{x: number; y: number} | null>(null);
+  const [ghostPos, setGhostPos] = React.useState<number | null>(null);
+  const [ghostOrient, setGhostOrient] = React.useState<'horizontal' | 'vertical'>('horizontal');
 
   const getContainerCoords = React.useCallback((clientX: number, clientY: number) => {
     const el = containerRef.current;
@@ -275,82 +295,93 @@ export function EditorCanvas({
         onClearAllFields={onClearAllFields}
         onUndo={onUndo}
         onRedo={onRedo}
+        snapToGuides={snapToGuides}
+        showRulers={showRulers}
+        onSnapToGuidesChange={onSnapToGuidesChange}
+        onShowRulersChange={onShowRulersChange}
       />
 
-      {/* Canvas Workspace */}
+      {/* Horizontal ruler — fixed below toolbar */}
+      {showRulers && pdfBytes && (
+        <div className="shrink-0 overflow-hidden border-b border-border bg-card" style={{ height: 18, paddingLeft: 18 }}>
+          <div className="mx-auto" style={{ width: pdfDimensions.width || 600, height: 18, position: 'relative' }}>
+            <Ruler orientation="horizontal" containerWidth={pdfDimensions.width || 600} containerHeight={0} zoom={zoom} onGuideCreate={onAddGuide} onGuidePreview={(p) => { setGhostPos(p); setGhostOrient('horizontal'); }} />
+          </div>
+        </div>
+      )}
+
+      {/* Workspace */}
       <div
         role="none"
-        className="flex flex-1 items-start justify-center overflow-auto bg-muted/30 p-8"
+        data-workspace
+        className="relative flex flex-1 overflow-auto bg-muted/30"
         onMouseDown={() => !isPreviewMode && onSelectField(null)}
       >
+        {/* Vertical ruler — sticky left */}
+        {showRulers && pdfBytes && (
+          <div className="sticky left-0 z-50 shrink-0 self-start border-r border-border bg-card" style={{ width: 18, minHeight: pdfDimensions.height || 800 }}>
+            <Ruler orientation="vertical" containerWidth={0} containerHeight={pdfDimensions.height || 800} zoom={zoom} onGuideCreate={onAddGuide} onGuidePreview={(p) => { setGhostPos(p); setGhostOrient('vertical'); }} />
+          </div>
+        )}
+
         {pdfBytes ? (
-          <div
-            ref={containerRef}
-            className="relative inline-block select-none rounded-sm border border-border bg-white shadow-2xl dark:bg-slate-900"
-            style={{
-              width: pdfDimensions.width ? `${pdfDimensions.width}px` : 'auto',
-            }}
-            onMouseDown={handleWorkspaceMouseDown}
-            onDragOver={(e) => {
-              if (isPreviewMode || !onDropField) return;
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onDrop={(e) => {
-              if (isPreviewMode || !onDropField) return;
-              e.preventDefault();
-              e.stopPropagation();
-              const header = e.dataTransfer.getData('text/plain');
-              if (!header) return;
-              const rect = containerRef.current?.getBoundingClientRect();
-              if (!rect) return;
-              const x = ((e.clientX - rect.left) / rect.width) * 100;
-              const y = ((e.clientY - rect.top) / rect.height) * 100;
-              onDropField(header, x, y);
-            }}
-          >
-            {/* Rendered PDF canvas using react-pdf */}
-            <Document
-              file={memoizedFile}
-              onLoadSuccess={({ numPages }) => onLoadSuccess(numPages)}
-              loading={<PdfPageSkeleton width={pdfDimensions.width} height={pdfDimensions.height} />}
+          <div className="flex-1 flex items-start justify-center p-6">
+            <div
+              ref={containerRef}
+              data-canvas-container
+              className="relative inline-block select-none rounded-sm border border-border bg-white shadow-2xl dark:bg-slate-900"
+              style={{
+                width: pdfDimensions.width ? `${pdfDimensions.width}px` : 'auto',
+              }}
+              onMouseDown={handleWorkspaceMouseDown}
+              onDragOver={(e) => {
+                if (isPreviewMode || !onDropField) return;
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                if (isPreviewMode || !onDropField) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const header = e.dataTransfer.getData('text/plain');
+                if (!header) return;
+                const rect = containerRef.current?.getBoundingClientRect();
+                if (!rect) return;
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                onDropField(header, x, y);
+              }}
             >
-              <PdfPageWithFade
-                key={currentPage}
-                pageNumber={currentPage}
-                scale={zoom}
-                pdfDimensions={pdfDimensions}
-                onLoadSuccess={(page) => onPageRenderSuccess(page.width, page.height)}
-              />
-            </Document>
+              {/* Rendered PDF canvas using react-pdf */}
+              <Document
+                file={memoizedFile}
+                onLoadSuccess={({ numPages }) => onLoadSuccess(numPages)}
+                loading={<PdfPageSkeleton width={pdfDimensions.width} height={pdfDimensions.height} />}
+              >
+                <PdfPageWithFade
+                  key={currentPage}
+                  pageNumber={currentPage}
+                  scale={zoom}
+                  pdfDimensions={pdfDimensions}
+                  onLoadSuccess={(page) => onPageRenderSuccess(page.width, page.height)}
+                />
+              </Document>
 
-            {/* Grid overlay in edit mode */}
-            {!isPreviewMode && (
-              <div
-                className="pointer-events-none absolute inset-0 opacity-30"
-                style={{
-                  backgroundImage:
-                    'linear-gradient(hsl(var(--ring)/0.06) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--ring)/0.06) 1px, transparent 1px)',
-                  backgroundSize: '40px 40px',
-                }}
-              />
-            )}
+                {/* Marquee selection overlay */}
+                {marqueeRect && (
+                  <div
+                    className="pointer-events-none absolute z-30 rounded border-2 border-blue-600/80 bg-blue-600/20"
+                    style={{
+                      left: marqueeRect.left,
+                      top: marqueeRect.top,
+                      width: marqueeRect.width,
+                      height: marqueeRect.height,
+                    }}
+                  />
+                )}
 
-            {/* Marquee selection overlay */}
-            {marqueeRect && (
-              <div
-                className="pointer-events-none absolute z-30 rounded border-2 border-blue-600/80 bg-blue-600/20"
-                style={{
-                  left: marqueeRect.left,
-                  top: marqueeRect.top,
-                  width: marqueeRect.width,
-                  height: marqueeRect.height,
-                }}
-              />
-            )}
-
-            {/* Field overlay layer */}
-            <div className="absolute inset-0 z-10 overflow-visible">
+                {/* Field overlay layer */}
+                <div className="absolute inset-0 z-10 overflow-visible">
               {placedFields.flatMap((field) => {
                 if (field.page !== currentPage) return [];
                 if (field.visible === false && !isPreviewMode) return [];
@@ -450,6 +481,7 @@ export function EditorCanvas({
               })}
             </div>
           </div>
+          </div>
         ) : (
           /* Empty state */
           <div className="flex h-full w-full max-w-lg flex-col items-center justify-center gap-5 rounded-2xl border-2 border-dashed border-border px-6 py-16 text-center">
@@ -473,6 +505,18 @@ export function EditorCanvas({
           </div>
         )}
       </div>
+
+      {/* Fixed guide overlay (viewport-level) */}
+      <GuidesOverlay
+        guides={guides}
+        currentPage={currentPage}
+        isPreviewMode={isPreviewMode}
+        onRemoveGuide={onRemoveGuide}
+        onUpdateGuidePosition={onUpdateGuidePosition}
+        ghostPosition={ghostPos}
+        ghostOrientation={ghostOrient}
+        versionKey={pdfDimensions.width + pdfDimensions.height}
+      />
     </div>
   );
 }

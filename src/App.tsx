@@ -161,6 +161,14 @@ export default function App() {
                 onLoadSuccess={pdf.setTotalPages}
                 onPageRenderSuccess={(width, height) => pdf.setPdfDimensions({ width, height })}
                 onDropField={(header, x, y) => fields.addFieldToPage(header, { x, y })}
+                snapToGuides={fields.snapToGuides}
+                showRulers={fields.showRulers}
+                onSnapToGuidesChange={fields.setSnapToGuides}
+                onShowRulersChange={fields.setShowRulers}
+                guides={fields.guides}
+                onAddGuide={fields.addGuide}
+                onRemoveGuide={fields.removeGuide}
+                onUpdateGuidePosition={fields.updateGuidePosition}
               />
             </Suspense>
 
