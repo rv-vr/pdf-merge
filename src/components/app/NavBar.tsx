@@ -2,6 +2,7 @@ import { FileText, Download, Info, Sun, Moon, Keyboard, Users } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,16 @@ const SHORTCUT_GROUPS = [
       { keySets: [['[']], description: 'Move backward one layer' },
       { keySets: [['Ctrl', ']']], description: 'Bring to front' },
       { keySets: [['Ctrl', '[']], description: 'Send to back' },
+    ],
+  },
+  {
+    label: 'Preview',
+    shortcuts: [
+      { keySets: [['Ctrl', '↑']], description: 'Previous row' },
+      { keySets: [['Ctrl', '↓']], description: 'Next row' },
+      { keySets: [['Ctrl', 'Shift', '↑']], description: 'First row' },
+      { keySets: [['Ctrl', 'Shift', '↓']], description: 'Last row' },
+      { keySets: [['Ctrl', '1–9']], description: 'Jump to row position' },
     ],
   },
   {
@@ -240,35 +251,37 @@ export function NavBar({
 
       {/* Keyboard Shortcuts Dialog */}
       <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
             <DialogDescription>
               Shortcuts work when a field is selected and no text input is focused.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-5 py-2">
-            {SHORTCUT_GROUPS.map((group) => (
-              <div key={group.label} className="flex flex-col gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {group.label}
-                </p>
-                <div className="flex flex-col gap-1.5">
-                  {group.shortcuts.map((s, i) => (
-                    <div key={i} className="flex items-center justify-between gap-4">
-                      <span className="text-sm text-foreground">{s.description}</span>
-                      <div className="flex shrink-0 items-center gap-1">
-                        {s.keySets.flatMap((keySet, j) => [
-                          ...(j > 0 ? [<span key={`sep-${j}`} className="px-0.5 text-[10px] text-muted-foreground">/</span>] : []),
-                          ...keySet.map((k) => <Kbd key={`${j}-${k}`}>{k}</Kbd>),
-                        ])}
+          <ScrollArea className="max-h-[60vh] pr-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-6 py-2">
+              {SHORTCUT_GROUPS.map((group) => (
+                <div key={group.label} className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {group.shortcuts.map((s, i) => (
+                      <div key={i} className="flex items-start justify-between gap-3">
+                        <span className="text-sm text-foreground leading-5">{s.description}</span>
+                        <div className="flex shrink-0 items-center gap-1">
+                          {s.keySets.flatMap((keySet, j) => [
+                            ...(j > 0 ? [<span key={`sep-${j}`} className="px-0.5 text-[10px] text-muted-foreground self-center">/</span>] : []),
+                            ...keySet.map((k) => <Kbd key={`${j}-${k}`}>{k}</Kbd>),
+                          ])}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </header>

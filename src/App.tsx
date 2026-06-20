@@ -26,7 +26,7 @@ export default function App() {
 
   const pdf = usePdf(view);
   const csv = useCsv();
-  const fields = useFieldEditor(pdf.currentPage);
+  const fields = useFieldEditor(pdf.currentPage, csv.csvRows.length);
   const exportState = useExport(pdf.pdfBytes, pdf.pdfFile, csv.csvRows, fields.placedFields, csv.filenameColumn);
 
   useEffect(() => {

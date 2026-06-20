@@ -22,7 +22,7 @@ const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean } = {
   visible: true,
 };
 
-export function useFieldEditor(currentPage: number) {
+export function useFieldEditor(currentPage: number, totalPreviewRows: number = 0) {
   const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
   const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([]);
   const selectedFieldId = selectedFieldIds.length === 1 ? selectedFieldIds[0] : null;
@@ -139,6 +139,26 @@ export function useFieldEditor(currentPage: number) {
         e.preventDefault();
         setSelectedFieldIds([]);
         return;
+      }
+
+      // Preview row navigation (Ctrl+Up/Down, Ctrl+Shift+Up/Down, Ctrl+1-9)
+      if (isPreviewMode && ctrl && totalPreviewRows > 0) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setPreviewRowIndex(e.shiftKey ? 0 : (prev) => Math.max(0, prev - 1));
+          return;
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setPreviewRowIndex(e.shiftKey ? totalPreviewRows - 1 : (prev) => Math.min(totalPreviewRows - 1, prev + 1));
+          return;
+        }
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= 9) {
+          e.preventDefault();
+          setPreviewRowIndex(Math.round((num / 9) * (totalPreviewRows - 1)));
+          return;
+        }
       }
 
       // Copy / Paste — no field selected required
@@ -300,7 +320,7 @@ export function useFieldEditor(currentPage: number) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [snapshot, undo, redo, currentPage]);
+  }, [snapshot, undo, redo, currentPage, isPreviewMode, totalPreviewRows, setPreviewRowIndex]);
 
   useEffect(() => {
     if (!draggingFieldId) return;
