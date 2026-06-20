@@ -36,7 +36,7 @@ export interface PlacedField {
  * Translates page percentage coordinates from the screen canvas (top-left origin)
  * into PDF points (bottom-left origin).
  */
-function translateCoordinates(
+export function translateCoordinates(
   xPercent: number,
   yPercent: number,
   pdfWidth: number,
@@ -54,7 +54,7 @@ function translateCoordinates(
 /**
  * Helper to parse a hex color string (e.g. "#aa3bff") to rgb values (0.0 - 1.0)
  */
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const cleanHex = hex.replace('#', '');
   const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
   const g = parseInt(cleanHex.substring(2, 4), 16) / 255;

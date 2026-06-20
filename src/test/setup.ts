@@ -6,3 +6,10 @@ vi.mock('react-pdf', () => ({
   Document: ({ children }: { children: React.ReactNode }) => children,
   Page: () => null,
 }));
+
+// ResizeObserver polyfill for shadcn components (Select, Slider, etc.)
+globalThis.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
