@@ -57,24 +57,12 @@ export function translateCoordinates(
   return { x, y: pdfHeight - y - fontSize * 0.95 }
 }
 
-/**
- * Helper to parse a hex color string (e.g. "#aa3bff") to rgb values (0.0 - 1.0)
- */
+// ponytail: bit-shift parse — same result as substring/parseInt x3
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const cleanHex = hex.replace("#", "")
-  const r = parseInt(cleanHex.substring(0, 2), 16) / 255
-  const g = parseInt(cleanHex.substring(2, 4), 16) / 255
-  const b = parseInt(cleanHex.substring(4, 6), 16) / 255
-  return {
-    r: isNaN(r) ? 0 : r,
-    g: isNaN(g) ? 0 : g,
-    b: isNaN(b) ? 0 : b,
-  }
+  const n = parseInt(hex.replace("#", ""), 16) || 0
+  return { r: (n >> 16 & 255) / 255, g: (n >> 8 & 255) / 255, b: (n & 255) / 255 }
 }
 
-/**
- * Helper to resolve the correct font style based on parameters
- */
 const base = import.meta.env.BASE_URL
 
 const GOOGLE_FONTS_URLS: Record<
