@@ -113,14 +113,8 @@ function PdfPageWithFade({
         renderAnnotationLayer={false}
         onLoadSuccess={onLoadSuccess}
         onRenderSuccess={() => setRendered(true)}
-        loading={
-          <PdfPageSkeleton
-            width={pdfDimensions.width}
-            height={pdfDimensions.height}
-          />
-        }
       />
-      {/* Skeleton cover fades out once canvas is painted */}
+      {/* ponytail: overlay is the skeleton; loading prop removed as redundant */}
       <div
         className={cn(
           "pointer-events-none absolute inset-0 transition-opacity duration-500",
@@ -135,6 +129,7 @@ function PdfPageWithFade({
     </div>
   )
 }
+
 
 interface EditorCanvasProps {
   pdfBytes: ArrayBuffer | null
