@@ -55,4 +55,17 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1200, // ponytail: @pdf-lib/fontkit OpenType engine is irreducibly large
+    rolldownOptions: {
+      output: {
+        // ponytail: group by dependency domain — stable cache keys, parallel downloads
+        manualChunks: (id: string) => {
+          if (id.includes("pdfjs-dist")) return "vendor-pdfjs"
+          if (id.includes("pdf-lib") || id.includes("@pdf-lib")) return "vendor-pdflib"
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom")) return "vendor-react"
+        },
+      },
+    },
+  },
 })
