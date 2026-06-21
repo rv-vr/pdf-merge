@@ -71,12 +71,8 @@ export default function App() {
     selectedFieldIds.length > 0
       ? fields.placedFields.filter((f) => selectedFieldIds.includes(f.id))
       : []
-  const nativeWidth = pdf.pdfDimensions.width
-    ? Math.round(pdf.pdfDimensions.width / pdf.zoom)
-    : 600
-  const nativeHeight = pdf.pdfDimensions.height
-    ? Math.round(pdf.pdfDimensions.height / pdf.zoom)
-    : 800
+  // ponytail: nativeWidth/nativeHeight come from hook — no recompute needed
+  const { nativeWidth, nativeHeight } = fields
   const primaryField =
     selectedFieldIds.length > 0
       ? fields.placedFields.find(
