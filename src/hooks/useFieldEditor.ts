@@ -2,38 +2,18 @@ import React, { useState, useRef, useEffect, useCallback } from "react"
 import type { PlacedField } from "@/types"
 import type { Guide } from "@/lib/editorTypes"
 
-type FieldProps = {
-  font:
-    | "Helvetica"
-    | "Times-Roman"
-    | "Courier"
-    | "Arimo"
-    | "Carlito"
-    | "EB Garamond"
-    | "Lora"
-    | "Open Sans"
-    | "Open Sans Condensed"
-    | "Poppins"
-  fontSize: number
-  color: string
-  isBold: boolean
-  isItalic: boolean
-  width: number
-  align: "left" | "center" | "right"
+// ponytail: FieldProps was a duplicate of PlacedField fields — dropped
+const DEFAULT_FIELD_PROPS: Partial<PlacedField> & { visible: boolean; locked: boolean } = {
+  font: "Helvetica",
+  fontSize: 14,
+  color: "#000000",
+  isBold: false,
+  isItalic: false,
+  width: 100,
+  align: "left",
+  visible: true,
+  locked: false,
 }
-
-const DEFAULT_FIELD_PROPS: FieldProps & { visible: boolean; locked: boolean } =
-  {
-    font: "Helvetica",
-    fontSize: 14,
-    color: "#000000",
-    isBold: false,
-    isItalic: false,
-    width: 100,
-    align: "left",
-    visible: true,
-    locked: false,
-  }
 
 export function useFieldEditor(
   currentPage: number,
@@ -708,7 +688,7 @@ export function useFieldEditor(
       placedFieldsRef.current.find(
         (f) => f.id === lastSelectedFieldIdRef.current
       )
-    const props: FieldProps = sourceField
+    const props: Partial<PlacedField> = sourceField
       ? {
           font: sourceField.font,
           fontSize: sourceField.fontSize,
@@ -720,7 +700,7 @@ export function useFieldEditor(
         }
       : DEFAULT_FIELD_PROPS
 
-    const newField: PlacedField = {
+    const newField = {
       id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       fieldName: header,
       visible: true,
@@ -728,7 +708,7 @@ export function useFieldEditor(
       y: pos?.y ?? Math.round(nativeHeight * 0.45),
       page: currentPage,
       ...props,
-    }
+    } as PlacedField // ponytail: DEFAULT_FIELD_PROPS always supplies required fields
     setPlacedFields((prev) => [...prev, newField])
     setSelectedFieldId(newField.id)
   }
@@ -818,98 +798,50 @@ export function useFieldEditor(
     })
   }
 
-  // Bulk: move all selected fields forward/backward by consolidating or swapping boundary
-  function moveSelectedToFront(overrideIds?: string[]) {
+  // ponytail: moveSelectedToFront/Back merged — only diff was concat order + boundary direction
+  function moveSelected(dir: "front" | "back", overrideIds?: string[]) {
     const ids = filterLockedIds(overrideIds ?? selectedFieldIdsRef.current)
     if (ids.length === 0) return
     snapshot()
     setPlacedFields((prev) => {
-      let minIdx = prev.length,
-        maxIdx = -1
+      let minIdx = prev.length, maxIdx = -1
       for (let i = 0; i < prev.length; i++) {
-        if (ids.includes(prev[i].id)) {
-          minIdx = Math.min(minIdx, i)
-          maxIdx = Math.max(maxIdx, i)
-        }
+        if (ids.includes(prev[i].id)) { minIdx = Math.min(minIdx, i); maxIdx = Math.max(maxIdx, i) }
       }
       if (maxIdx < 0) return prev
 
       const selected = prev.filter((f) => ids.includes(f.id))
-      const before = prev.filter(
-        (f) => !ids.includes(f.id) && prev.indexOf(f) < minIdx
-      )
-      const between = prev.filter(
-        (f) =>
-          !ids.includes(f.id) &&
-          prev.indexOf(f) > minIdx &&
-          prev.indexOf(f) < maxIdx
-      )
-      const after = prev.filter(
-        (f) => !ids.includes(f.id) && prev.indexOf(f) > maxIdx
-      )
+      const before = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) < minIdx)
+      const between = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) > minIdx && prev.indexOf(f) < maxIdx)
+      const after = prev.filter((f) => !ids.includes(f.id) && prev.indexOf(f) > maxIdx)
 
       if (between.length > 0) {
-        return [...before, ...between, ...selected, ...after]
+        return dir === "front"
+          ? [...before, ...between, ...selected, ...after]
+          : [...before, ...selected, ...between, ...after]
       }
 
-      if (maxIdx >= prev.length - 1) return prev
-      const aboveField = prev[maxIdx + 1]
-      const allOthers = [...before, ...between, ...after]
-      const swapIdx = allOthers.indexOf(aboveField)
-      if (swapIdx < 0) return prev
-      return [
-        ...allOthers.slice(0, swapIdx + 1),
-        ...selected,
-        ...allOthers.slice(swapIdx + 1),
-      ]
+      if (dir === "front") {
+        if (maxIdx >= prev.length - 1) return prev
+        const pivot = prev[maxIdx + 1]
+        const others = [...before, ...after]
+        const si = others.indexOf(pivot)
+        if (si < 0) return prev
+        return [...others.slice(0, si + 1), ...selected, ...others.slice(si + 1)]
+      } else {
+        if (minIdx <= 0) return prev
+        const pivot = prev[minIdx - 1]
+        const others = [...before, ...after]
+        const si = others.indexOf(pivot)
+        if (si < 0) return prev
+        return [...others.slice(0, si), ...selected, ...others.slice(si)]
+      }
     })
   }
 
-  function moveSelectedToBack(overrideIds?: string[]) {
-    const ids = filterLockedIds(overrideIds ?? selectedFieldIdsRef.current)
-    if (ids.length === 0) return
-    snapshot()
-    setPlacedFields((prev) => {
-      let minIdx = prev.length,
-        maxIdx = -1
-      for (let i = 0; i < prev.length; i++) {
-        if (ids.includes(prev[i].id)) {
-          minIdx = Math.min(minIdx, i)
-          maxIdx = Math.max(maxIdx, i)
-        }
-      }
-      if (maxIdx < 0) return prev
+  function moveSelectedToFront(overrideIds?: string[]) { moveSelected("front", overrideIds) }
+  function moveSelectedToBack(overrideIds?: string[]) { moveSelected("back", overrideIds) }
 
-      const selected = prev.filter((f) => ids.includes(f.id))
-      const before = prev.filter(
-        (f) => !ids.includes(f.id) && prev.indexOf(f) < minIdx
-      )
-      const between = prev.filter(
-        (f) =>
-          !ids.includes(f.id) &&
-          prev.indexOf(f) > minIdx &&
-          prev.indexOf(f) < maxIdx
-      )
-      const after = prev.filter(
-        (f) => !ids.includes(f.id) && prev.indexOf(f) > maxIdx
-      )
-
-      if (between.length > 0) {
-        return [...before, ...selected, ...between, ...after]
-      }
-
-      if (minIdx <= 0) return prev
-      const belowField = prev[minIdx - 1]
-      const allOthers = [...before, ...between, ...after]
-      const swapIdx = allOthers.indexOf(belowField)
-      if (swapIdx < 0) return prev
-      return [
-        ...allOthers.slice(0, swapIdx),
-        ...selected,
-        ...allOthers.slice(swapIdx),
-      ]
-    })
-  }
 
   // displayOrderIds: topmost-first (index 0 = renders on top).
   // Reverses before storing so last in array = topmost (matches DOM/pdf-lib draw order).
@@ -1111,5 +1043,8 @@ export function useFieldEditor(
     handleResizeMouseDown,
     handleResizeTouchStart,
     resetFields,
+    // ponytail: expose so App.tsx doesn't recompute the same formula
+    nativeWidth,
+    nativeHeight,
   }
 }
